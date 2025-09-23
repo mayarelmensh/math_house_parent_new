@@ -33,10 +33,14 @@ class _LoginScreenState extends State<LoginScreen> {
       bloc: loginCubit,
       listener: (dialogContext, state) {
         if (state is LoginLoadingState) {
-          DialogUtils.showLoading(
-            context: dialogContext,
-            message: 'Logging in...',
-          );
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) =>
+                  Center(child: CircularProgressIndicator(
+                    color: AppColors.primary,
+                  )),
+            );
         }
         if (state is LoginErrorState) {
           DialogUtils.showMessage(

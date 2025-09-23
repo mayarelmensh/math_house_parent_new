@@ -329,7 +329,6 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
     }
 
     String imageData;
-
     if (selectedMethod!.id == 'Wallet') {
       imageData = 'wallet';
     } else {
@@ -344,7 +343,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       }
       imageData = 'data:image/jpeg;base64,$base64String';
     }
-
+   print("imageDataaaaaaaaaaaaaa:$imageData");
     try {
       await buyPackageCubit.buyPackage(
         packageId: packageId!,
@@ -846,8 +845,8 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
             );
             Navigator.pop(context);
           } else if (state is BuyPackageError) {
-
-            showTopSnackBar(context, state.message, AppColors.primaryColor);
+           print(state.message);
+            showTopSnackBar(context," Please select a valid method or check your wallet balance", AppColors.primaryColor);
           }
         },
         child: Scaffold(
@@ -885,6 +884,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                         _buildCompactPackageInfoCard(),
                         Expanded(
                           child: RefreshIndicator(
+                            color: AppColors.primary,
                             onRefresh: () async {
                               paymentMethodsCubit.getPaymentMethods(
                                 userId: SelectedStudent.studentId,
@@ -928,11 +928,8 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                               ),
                               text: "Confirm Purchase",
                               onPressed:
-                                  (selectedMethod != null &&
-                                      (selectedMethod!.id == 'Wallet' ||
-                                          base64String != null))
-                                  ? confirmPurchase
-                                  : null,
+                                  confirmPurchase
+
                             ),
                           ),
                         ],

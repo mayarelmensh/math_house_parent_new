@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:math_house_parent_new/features/auth/forget_password_screen/forget_password_screen.dart';
+import 'package:math_house_parent_new/features/pages/courses_screen/cubit/buy_chapter_cubit.dart';
 import 'package:math_house_parent_new/features/pages/courses_screen/cubit/courses_cubit.dart';
 import 'package:math_house_parent_new/features/pages/courses_screen/select_screen.dart';
 import 'package:math_house_parent_new/features/pages/home_screen/tabs/home_tab/home_tab.dart';
@@ -84,6 +85,7 @@ class MyApp extends StatelessWidget {
             BlocProvider(create: (_) => getIt<PackagesCubit>()),
             BlocProvider(create: (_) => getIt<MyPackageCubit>()),
             BlocProvider(create: (_) => getIt<MyCoursesCubit>()),
+            BlocProvider(create: (_) => getIt<BuyChapterCubit>()),
           ],
           child: MaterialApp(
             debugShowCheckedModeBanner: false,

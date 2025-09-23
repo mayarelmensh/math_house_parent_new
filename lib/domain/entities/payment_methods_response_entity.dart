@@ -10,6 +10,7 @@ class PaymentMethodEntity {
   final String? paymentType;
   final String? description;
   final String? logo;
+  final String? paymentLink; // Added to handle Paymob link if needed
 
   PaymentMethodEntity({
     this.id,
@@ -17,5 +18,6 @@ class PaymentMethodEntity {
     this.paymentType,
     this.description,
     this.logo,
+    this.paymentLink,
   });
 }

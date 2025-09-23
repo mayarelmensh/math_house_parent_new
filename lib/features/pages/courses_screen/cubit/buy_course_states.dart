@@ -8,12 +8,13 @@ class BuyCourseLoadingState extends BuyCourseStates {}
 
 class BuyCourseSuccessState extends BuyCourseStates {
   final BuyCourseResponseEntity response;
+  final String? paymentLink;
 
-  BuyCourseSuccessState(this.response);
+  BuyCourseSuccessState(this.response, {this.paymentLink});
 }
 
 class BuyCourseErrorState extends BuyCourseStates {
-  final String error;
+  final String? message;
 
-  BuyCourseErrorState(this.error);
+  BuyCourseErrorState(this.message);
 }

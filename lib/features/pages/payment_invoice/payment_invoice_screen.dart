@@ -43,7 +43,7 @@ class _PaymentInvoiceScreenState extends State<PaymentInvoiceScreen> {
               child: CircularProgressIndicator(color: AppColors.primaryColor),
             );
           } else if (state is PaymentInvoiceError) {
-            return Center(child: Text(state.message));
+            return Center(child: Text("something went wrong"));
           } else if (state is PaymentInvoiceSuccess) {
             final invoice = state.invoice.invoice;
             if (invoice == null) {

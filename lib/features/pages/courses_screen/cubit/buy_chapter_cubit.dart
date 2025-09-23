@@ -14,14 +14,14 @@ class BuyChapterCubit extends Cubit<BuyChapterStates> {
   BuyChapterCubit(this.apiManager) : super(BuyChapterInitialState());
 
   Future<void> buyChapter({
-    required int userId,
-    required int courseId,
-    required int chapterId,
-    required dynamic paymentMethodId,
-    required dynamic amount,
-    required int duration,
+    required String userId,
+    required String courseId,
+    required String chapterId,
+    required String paymentMethodId,
+    required String amount,
+    required String duration,
     required String image,
-    int? promoCode, // Added optional promoCode parameter
+    String? promoCode,
   }) async {
     emit(BuyChapterLoadingState());
     try {
@@ -52,11 +52,9 @@ class BuyChapterCubit extends Cubit<BuyChapterStates> {
         'amount': amount,
         'user_id': userId,
         'image': imageData,
-        if (promoCode != null)
-          'promo_code': promoCode, // Include promo_code if provided
+        if (promoCode != null) 'promo_code': promoCode,
       };
 
-      // Log the request for debugging
       print('BuyChapter Request: $body');
       print('Headers: {Authorization: Bearer $token}');
 
@@ -65,19 +63,35 @@ class BuyChapterCubit extends Cubit<BuyChapterStates> {
         body: body,
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
-      print('Response data: ${response.data}');
+
+      print('BuyChapter Raw Response: $response');
+      print('Response Data Type: ${response.data.runtimeType}');
+      print('Response Data: ${response.data}');
+
+      // Extract payment link directly from response data
+      String? paymentLink;
+      if (response.data is Map<String, dynamic>) {
+        final responseMap = response.data as Map<String, dynamic>;
+        paymentLink = responseMap['payment_link'] as String?;
+        print('Direct payment_link extraction: $paymentLink');
+      }
+
       final buyChapterResponse = BuyChapterModel.fromJson(response.data);
-      emit(BuyChapterSuccessState(buyChapterResponse));
+      print('Model Payment Link: ${buyChapterResponse.paymentLink}');
+
+      // Use the directly extracted payment link if model doesn't have it
+      final finalPaymentLink = buyChapterResponse.paymentLink ?? paymentLink;
+      print('Final Payment Link: $finalPaymentLink');
+
+      emit(BuyChapterSuccessState(buyChapterResponse, finalPaymentLink));
     } catch (e) {
       String errorMessage = 'Failed to purchase chapter';
 
       if (e is DioException) {
         print('DioException response data: ${e.response?.data}');
         print('DioException message: ${e.message}');
-
         if (e.response?.data is Map<String, dynamic>) {
-          errorMessage =
-              e.response?.data['message']?.toString() ??
+          errorMessage = e.response?.data['message']?.toString() ??
               'Error ${e.response?.statusCode}: ${e.message}';
         } else {
           errorMessage = 'Error ${e.response?.statusCode}: ${e.message}';

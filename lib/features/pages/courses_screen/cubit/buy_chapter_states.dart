@@ -8,8 +8,9 @@ class BuyChapterLoadingState extends BuyChapterStates {}
 
 class BuyChapterSuccessState extends BuyChapterStates {
   final BuyChapterModel model;
+  final String? paymentLink; // Add this parameter
 
-  BuyChapterSuccessState(this.model);
+  BuyChapterSuccessState(this.model, this.paymentLink);
 }
 
 class BuyChapterErrorState extends BuyChapterStates {

@@ -40,7 +40,7 @@ class WalletHistoryScreen extends StatelessWidget {
             } else if (state is WalletError) {
               return Center(
                 child: Text(
-                  'Error: ${state.message}',
+                  'somethong went wrong ,\n check if you select your student',
                   style: const TextStyle(color: AppColors.red, fontSize: 16),
                 ),
               );

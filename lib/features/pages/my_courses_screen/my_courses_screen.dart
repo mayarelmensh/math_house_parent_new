@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:math_house_parent_new/core/widgets/custom_app_bar.dart';
 import 'package:math_house_parent_new/data/models/student_selected.dart';
 import '../../../core/utils/app_colors.dart';
+import '../../../core/utils/app_routes.dart';
 import '../../../data/models/my_course_model.dart';
 import 'cuibt/my_courses_cuibt.dart';
 import 'cuibt/my_courses_states.dart';
@@ -21,6 +22,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
   late Animation<double> _fadeAnimation;
   final TextEditingController _searchController = TextEditingController();
   String? _selectedTeacher;
+  bool _isInitialLoading = true; // Track initial loading state
 
   bool get isTablet => MediaQuery.of(context).size.width > 600;
   bool get isDesktop => MediaQuery.of(context).size.width > 1024;
@@ -39,18 +41,27 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
-    // Fetch courses when the screen initializes
-    if (SelectedStudent.studentId != null) {
-      context.read<MyCoursesCubit>().fetchMyCourses(SelectedStudent.studentId!);
-    } else {
-      context.read<MyCoursesCubit>().emit(const MyCoursesError('No student selected'));
-    }
+    // Fetch courses or show no student state
+    _loadCourses();
     _animationController.forward();
 
     // Listen to search input
     _searchController.addListener(() {
       context.read<MyCoursesCubit>().searchCourses(_searchController.text);
     });
+  }
+
+  void _loadCourses() {
+    print("Loading courses, studentId: ${SelectedStudent.studentId}");
+    if (SelectedStudent.studentId != null && mounted) {
+      context.read<MyCoursesCubit>().fetchMyCourses(SelectedStudent.studentId!);
+    } else {
+      print("Emitting MyCoursesError: No student selected");
+      if (mounted) {
+        context.read<MyCoursesCubit>().emit(const MyCoursesError('No student selected'));
+      }
+      _isInitialLoading = false; // No loading needed if no student
+    }
   }
 
   @override
@@ -65,18 +76,24 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
     setState(() {
       _selectedTeacher = null;
       _searchController.clear();
+      _isInitialLoading = true; // Reset to show loading on tab switch
     });
     final cubit = context.read<MyCoursesCubit>();
     cubit.filterByTeacher(null); // Sync filter reset
     if (SelectedStudent.studentId != null) {
-      cubit.refreshMyCourses(SelectedStudent.studentId!); // Use refresh for better UX
+      cubit.refreshMyCourses(SelectedStudent.studentId!);
+    } else {
+      print("Emitting MyCoursesError on reset: No student selected");
+      if (mounted) {
+        cubit.emit(const MyCoursesError('No student selected'));
+      }
     }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _resetScreen(); // Call directly to reset on tab switch
+    _resetScreen(); // Reset on tab switch
   }
 
   @override
@@ -86,23 +103,35 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
       backgroundColor: AppColors.lightGray,
       appBar: CustomAppBar(title: "My Courses"),
       body: BlocBuilder<MyCoursesCubit, MyCoursesState>(
-        builder: (context, state) => _buildBody(state),
+        builder: (context, state) {
+          print("MyCoursesScreen state: $state");
+          return _buildBody(state);
+        },
       ),
     );
   }
 
   Widget _buildBody(MyCoursesState state) {
+    print("MyCoursesScreen state: $state");
+
     if (state is MyCoursesLoading) {
+      print("Showing MyCoursesLoading state");
       return _buildLoadingState();
     } else if (state is MyCoursesError) {
+      print("Showing MyCoursesError state: ${state.message}");
+      _isInitialLoading = false;
       return _buildErrorState(state.message);
     } else {
+      _isInitialLoading = false;
       List<MyCourse> courses = [];
       if (state is MyCoursesLoaded) {
+        print("Showing MyCoursesLoaded state with ${state.courses.length} courses");
         courses = state.courses;
       } else if (state is MyCoursesRefreshing) {
+        print("Showing MyCoursesRefreshing state with ${state.previousCourses?.courses.length ?? 0} courses");
         courses = state.previousCourses?.courses ?? [];
       } else if (state is MyCoursesEmpty) {
+        print("Showing MyCoursesEmpty state");
         courses = [];
       }
 
@@ -115,6 +144,8 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
             Expanded(
               child: courses.isEmpty && _searchController.text.isNotEmpty
                   ? _buildNoResultsState()
+                  : courses.isEmpty && SelectedStudent.studentId == null
+                  ? _buildNoStudentSelectedState()
                   : Column(
                 children: [
                   if (courses.isNotEmpty) _buildCoursesHeader(courses.length),
@@ -250,7 +281,17 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
 
   Widget _buildCoursesList(List<MyCourse> courses) {
     return RefreshIndicator(
-      onRefresh: () => context.read<MyCoursesCubit>().refreshMyCourses(SelectedStudent.studentId),
+      onRefresh: () {
+        if (SelectedStudent.studentId != null) {
+          return context.read<MyCoursesCubit>().refreshMyCourses(SelectedStudent.studentId!);
+        } else {
+          print("RefreshIndicator: No student selected");
+          if (mounted) {
+            context.read<MyCoursesCubit>().emit(const MyCoursesError('No student selected'));
+          }
+          return Future.value();
+        }
+      },
       color: AppColors.primary,
       child: ListView.builder(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
@@ -295,14 +336,24 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
+            width: 80.w,
+            height: 80.h,
             padding: EdgeInsets.all(20.r),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.white,
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.black.withOpacity(0.1),
+                  blurRadius: 10.r,
+                  offset: Offset(0, 4.h),
+                ),
+              ],
             ),
             child: CircularProgressIndicator(
               color: AppColors.primary,
-              strokeWidth: 3.w,
+              strokeWidth: 4.w,
+              backgroundColor: AppColors.grey[200],
             ),
           ),
           SizedBox(height: 24.h),
@@ -310,7 +361,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
             'Loading Courses...',
             style: TextStyle(
               fontSize: 16.sp,
-              color: AppColors.grey[600],
+              color: AppColors.grey[800],
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -352,7 +403,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
             ),
             SizedBox(height: 16.h),
             Text(
-              'An error occurred',
+              'An Error Occurred',
               style: TextStyle(
                 fontSize: 18.sp,
                 fontWeight: FontWeight.w600,
@@ -371,7 +422,15 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
             ),
             SizedBox(height: 24.h),
             ElevatedButton(
-              onPressed: () => context.read<MyCoursesCubit>().fetchMyCourses(SelectedStudent.studentId),
+              onPressed: () {
+                if (SelectedStudent.studentId != null) {
+                  print("Retrying fetchMyCourses with studentId: ${SelectedStudent.studentId}");
+                  context.read<MyCoursesCubit>().fetchMyCourses(SelectedStudent.studentId!);
+                } else {
+                  print("Navigating to ProfileScreen: No student selected");
+                  Navigator.pushNamed(context, AppRoutes.myStudentScreen);
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.white,
@@ -382,7 +441,79 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
                 elevation: 2,
               ),
               child: Text(
-                'Try Again',
+                SelectedStudent.studentId != null ? 'Try Again' : 'Select Student',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14.sp),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoStudentSelectedState() {
+    return Center(
+      child: Container(
+        margin: EdgeInsets.all(32.r),
+        padding: EdgeInsets.all(24.r),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16.r),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black.withOpacity(0.1),
+              blurRadius: 10.r,
+              offset: Offset(0, 4.h),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(16.r),
+              decoration: BoxDecoration(
+                color: AppColors.red.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.person_off,
+                size: 48.sp,
+                color: AppColors.red,
+              ),
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'No Student Selected',
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.grey[800],
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'Please select a student to view their courses',
+              style: TextStyle(fontSize: 14.sp, color: AppColors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 24.h),
+            ElevatedButton(
+              onPressed: () {
+                print("Navigating to ProfileScreen from NoStudentSelectedState");
+                Navigator.pushNamed(context, AppRoutes.myStudentScreen);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.white,
+                padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 12.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                elevation: 2,
+              ),
+              child: Text(
+                'Select Student',
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14.sp),
               ),
             ),
@@ -425,7 +556,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
             ),
             SizedBox(height: 16.h),
             Text(
-              'No courses found',
+              'No Courses Found',
               style: TextStyle(
                 fontSize: 18.sp,
                 fontWeight: FontWeight.w600,

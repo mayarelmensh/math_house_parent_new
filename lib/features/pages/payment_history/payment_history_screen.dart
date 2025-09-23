@@ -87,7 +87,7 @@ class _PaymentScreenViewState extends State<PaymentScreenView> {
                         ),
                       );
                     } else if (state is PaymentError) {
-                      return _buildErrorState(context, state.message);
+                      return _buildErrorState(context, "something went wrong");
                     } else if (state is PaymentSuccess) {
                       if (state.payments.isEmpty) {
                         return _buildEmptyState();

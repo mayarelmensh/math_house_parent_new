@@ -8,16 +8,6 @@ import 'package:math_house_parent_new/core/widgets/custom_app_bar.dart';
 import 'package:math_house_parent_new/data/models/student_selected.dart';
 import '../../../my_packages_screen/cubit/my_package_cubit.dart';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:math_house_parent_new/core/utils/app_colors.dart';
-import 'package:math_house_parent_new/core/utils/app_routes.dart';
-import 'package:math_house_parent_new/core/widgets/build_card_home.dart';
-import 'package:math_house_parent_new/core/widgets/custom_app_bar.dart';
-import 'package:math_house_parent_new/data/models/student_selected.dart';
-import '../../../my_packages_screen/cubit/my_package_cubit.dart';
-
 class HomeTab extends StatelessWidget {
   const HomeTab({super.key});
 
@@ -44,7 +34,7 @@ class HomeTab extends StatelessWidget {
     }
 
     final screenWidth = MediaQuery.of(context).size.width;
-    final crossAxisCount = (screenWidth / 200.w).floor();
+    final crossAxisCount = (screenWidth / 220.w).floor();
     final childAspectRatio = screenWidth > 600 ? 1.2 : 1.0;
 
     return Scaffold(
@@ -52,7 +42,7 @@ class HomeTab extends StatelessWidget {
         showArrowBack: false,
         actions: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding:  EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Image.asset("assets/images/logo.png"),
           ),
         ],
@@ -320,10 +310,8 @@ class PaymentsScreen extends StatelessWidget {
     final isTablet = screenWidth > 600;
     final isDesktop = screenWidth > 1024;
 
-    // تحسين حساب عدد الأعمدة بناءً على عرض الشاشة
-    final crossAxisCount = (screenWidth / (isDesktop ? 300.w : isTablet ? 250.w : 200.w)).floor().clamp(2, 4);
+    final crossAxisCount = (screenWidth / (isDesktop ? 300.w : isTablet ? 250.w : 220.w)).floor().clamp(2, 4);
 
-    // ضبط childAspectRatio بناءً على نوع الجهاز
     final childAspectRatio = isDesktop ? 1.3 : isTablet ? 1.2 : 1.0;
 
     return Scaffold(
@@ -334,50 +322,44 @@ class PaymentsScreen extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: isTablet ? 16.w : 12.w, vertical: 10.h),
             child: Image.asset(
               "assets/images/logo.png",
-              width: isTablet ? 40.w : 32.w,
-              height: isTablet ? 40.h : 32.h,
+              // width: isTablet ? 40.w : 32.w,
+              // height: isTablet ? 40.h : 32.h,
             ),
           ),
         ],
       ),
-      body: Padding(
-        padding: EdgeInsets.symmetric(
-          vertical: isTablet ? 40.h : 30.h,
-          horizontal: isTablet ? 24.w : 20.w,
-        ),
-        child: GridView.count(
-          crossAxisCount: crossAxisCount,
-          childAspectRatio: childAspectRatio,
-          crossAxisSpacing: isTablet ? 12.w : 10.w,
-          mainAxisSpacing: isTablet ? 12.h : 10.h,
-          padding: EdgeInsets.all(isTablet ? 12.r : 8.r),
-          children: [
-            HomeCard(
-              icon: Icons.account_balance_wallet,
-              title: "Recharge Wallet",
-              subtitle: "Add funds to your wallet",
-              onTap: () {
-                Navigator.pushNamed(context, AppRoutes.rechargeWallet);
-              },
-            ),
-            HomeCard(
-              icon: Icons.history,
-              title: "Payment History",
-              subtitle: "View your payment history",
-              onTap: () {
-                Navigator.pushNamed(context, AppRoutes.paymentHistory);
-              },
-            ),
-            HomeCard(
-              icon: Icons.account_balance,
-              title: "Wallet History",
-              subtitle: "Check your wallet transactions",
-              onTap: () {
-                Navigator.pushNamed(context, AppRoutes.walletHistory);
-              },
-            ),
-          ],
-        ),
+      body: GridView.count(
+        crossAxisCount: crossAxisCount,
+        childAspectRatio: childAspectRatio,
+        crossAxisSpacing: isTablet ? 12.w : 10.w,
+        mainAxisSpacing: isTablet ? 12.h : 10.h,
+        padding: EdgeInsets.all(isTablet ? 20.r : 15.r),
+        children: [
+          HomeCard(
+            icon: Icons.account_balance_wallet,
+            title: "Recharge Wallet",
+            subtitle: "Add funds to your wallet",
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.rechargeWallet);
+            },
+          ),
+          HomeCard(
+            icon: Icons.history,
+            title: "Payment History",
+            subtitle: "View your payment history",
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.paymentHistory);
+            },
+          ),
+          HomeCard(
+            icon: Icons.account_balance,
+            title: "Wallet History",
+            subtitle: "Check your wallet transactions",
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.walletHistory);
+            },
+          ),
+        ],
       ),
     );
   }

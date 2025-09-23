@@ -15,7 +15,7 @@ class BuyPackageCubit extends Cubit<BuyPackageState> {
     required String image,
     required int packageId,
   }) async {
-    emit(BuyPackageLoading());
+    emit(BuyPackageLoadingState());
 
     try {
       final response = await buyPackageUseCase.execute(
@@ -24,7 +24,7 @@ class BuyPackageCubit extends Cubit<BuyPackageState> {
         image: image,
         packageId: packageId,
       );
-      emit(BuyPackageSuccess(response));
+      emit(BuyPackageSuccess(response: response));
     } catch (e) {
       emit(BuyPackageError(e.toString()));
     }

@@ -3,17 +3,27 @@ import 'package:math_house_parent_new/domain/entities/courses_response_entity.da
 class BuyCourseResponseEntity {
   final CourseEntity? course;
   final String? paymentMethod;
-  final int? price;
+  final double? price; // Changed from int? to double? to handle decimal strings
+  final String? paymentLink;
 
-  BuyCourseResponseEntity({this.course, this.paymentMethod, this.price});
+  BuyCourseResponseEntity({
+    this.course,
+    this.paymentMethod,
+    this.price,
+    this.paymentLink,
+  });
 
   factory BuyCourseResponseEntity.fromJson(Map<String, dynamic> json) {
+    print('JSON Data for BuyCourseResponse: $json');
     return BuyCourseResponseEntity(
       course: json['course'] != null
           ? CourseEntity.fromJson(json['course'])
           : null,
       paymentMethod: json['payment_method']?.toString(),
-      price: json['price'],
+      price: json['price'] is int
+          ? (json['price'] as int).toDouble()
+          : double.tryParse(json['price'].toString()),
+      paymentLink: json['payment_link'], // Corrected key to match JSON
     );
   }
 
@@ -22,11 +32,11 @@ class BuyCourseResponseEntity {
       'course': course?.toJson(),
       'payment_method': paymentMethod,
       'price': price,
+      'payment_link': paymentLink, // Consistent with JSON key
     };
   }
 }
 
-// Reusing CourseEntity from courses_response_entity.dart
 class CourseEntity {
   final int? id;
   final String? courseName;
@@ -65,23 +75,23 @@ class CourseEntity {
   factory CourseEntity.fromJson(Map<String, dynamic> json) {
     return CourseEntity(
       id: json['id'],
-      courseName: json['course_name'],
+      courseName: json['course_name']?.toString(),
       categoryId: json['category_id'],
-      courseDescription: json['course_des'],
-      courseUrl: json['course_url'],
-      preRequisition: json['pre_requisition'],
-      gain: json['gain'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      courseDescription: json['course_des']?.toString(),
+      courseUrl: json['course_url']?.toString(),
+      preRequisition: json['pre_requisition']?.toString(),
+      gain: json['gain']?.toString(),
+      createdAt: json['created_at']?.toString(),
+      updatedAt: json['updated_at']?.toString(),
       teacherId: json['teacher_id'],
       userId: json['user_id'],
-      type: json['type'],
+      type: json['type']?.toString(),
       currencyId: json['currancy_id'],
-      imageLink: json['image_link'],
+      imageLink: json['image_link']?.toString(),
       prices: json['prices'] != null
           ? (json['prices'] as List)
-                .map((e) => PriceEntity.fromJson(e))
-                .toList()
+          .map((e) => PriceEntity.fromJson(e))
+          .toList()
           : null,
     );
   }
@@ -110,7 +120,7 @@ class CourseEntity {
 class PriceEntity {
   final int? id;
   final int? courseId;
-  final int? duration;
+  final int? duration; // Kept as int? but parsing handled in fromJson
   final int? price;
   final int? discount;
   final String? createdAt;
@@ -130,11 +140,15 @@ class PriceEntity {
     return PriceEntity(
       id: json['id'],
       courseId: json['course_id'],
-      duration: json['duration'],
-      price: json['price'],
+      duration: json['duration'] is int
+          ? json['duration']
+          : int.tryParse(json['duration'].toString() ?? ''),
+      price: json['price'] is int
+          ? json['price']
+          : int.tryParse(json['price'].toString() ?? ''),
       discount: json['discount'],
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      createdAt: json['created_at']?.toString(),
+      updatedAt: json['updated_at']?.toString(),
     );
   }
 

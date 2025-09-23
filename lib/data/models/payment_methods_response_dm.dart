@@ -29,6 +29,7 @@ class PaymentMethodDm extends PaymentMethodEntity {
     super.paymentType,
     super.description,
     super.logo,
+    super.paymentLink
   });
 
   factory PaymentMethodDm.fromJson(Map<String, dynamic> json) {
@@ -38,6 +39,7 @@ class PaymentMethodDm extends PaymentMethodEntity {
       paymentType: json['payment_type'],
       description: json['description'],
       logo: json['logo'],
+      paymentLink: json['paymentLink'],
     );
   }
 
@@ -48,6 +50,7 @@ class PaymentMethodDm extends PaymentMethodEntity {
       'payment_type': paymentType,
       'description': description,
       'logo': logo,
+      'paymentLink': paymentLink,
     };
   }
 }

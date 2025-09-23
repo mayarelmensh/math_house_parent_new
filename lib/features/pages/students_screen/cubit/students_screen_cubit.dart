@@ -45,7 +45,6 @@ class GetStudentsCubit extends Cubit<GetStudentsStates> {
     }
   }
 
-  /// ✅ تحميل طلبة المستخدم
   void getMyStudents() async {
     emit(GetStudentsLoadingState());
     final result = await getStudentsUseCase.getMyStudents();
@@ -57,9 +56,8 @@ class GetStudentsCubit extends Cubit<GetStudentsStates> {
     });
   }
 
-  /// ✅ اختيار طالب
   void selectStudent(int id) {
     selectedStudentId = id;
-    emit(StudentSelected(id));
+    emit(GetMyStudents(myStudents: myStudents));
   }
 }

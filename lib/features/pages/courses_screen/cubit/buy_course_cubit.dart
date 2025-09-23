@@ -14,13 +14,13 @@ class BuyCourseCubit extends Cubit<BuyCourseStates> {
   BuyCourseCubit(this.apiManager) : super(BuyCourseInitialState());
 
   Future<void> buyPackage({
-    required int userId,
-    required int courseId,
-    required dynamic paymentMethodId,
-    required double amount,
-    required int duration,
+    required String userId, // غيرناه لـ String
+    required String courseId, // غيرناه لـ String
+    required String paymentMethodId, // غيرناه لـ String
+    required String amount, // غيرناه لـ String
+    required String duration, // غيرناه لـ String
     required String image,
-    int? promoCode, // Added optional promoCode parameter
+    String? promoCode, // غيرناه لـ String
   }) async {
     emit(BuyCourseLoadingState());
     try {
@@ -35,11 +35,10 @@ class BuyCourseCubit extends Cubit<BuyCourseStates> {
       if (image == 'wallet') {
         imageData = 'wallet';
       } else {
-        // If Base64, check for prefix
         if (image.startsWith('data:image/')) {
-          imageData = image; // Prefix already present
+          imageData = image;
         } else {
-          imageData = 'data:image/jpeg;base64,$image'; // Add prefix
+          imageData = 'data:image/jpeg;base64,$image';
         }
       }
 
@@ -47,12 +46,11 @@ class BuyCourseCubit extends Cubit<BuyCourseStates> {
       final body = {
         'course_id': courseId,
         'payment_method_id': paymentMethodId,
-        'amount': amount.toInt(), // Convert to int to match API expectation
+        'amount': amount,
         'user_id': userId,
         'duration': duration,
         'image': imageData,
-        if (promoCode != null)
-          'promo_code': promoCode, // Include promo_code if provided
+        if (promoCode != null) 'promo_code': promoCode,
       };
 
       // Log the request for debugging
@@ -65,18 +63,22 @@ class BuyCourseCubit extends Cubit<BuyCourseStates> {
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
+      print('BuyCourse Response: ${response.data}');
       final buyCourseResponse = BuyCourseResponseEntity.fromJson(response.data);
-      emit(BuyCourseSuccessState(buyCourseResponse));
+      print('Payment Link: ${buyCourseResponse.paymentLink}');
+
+      emit(BuyCourseSuccessState(
+        buyCourseResponse,
+        paymentLink: buyCourseResponse.paymentLink,
+      ));
     } catch (e) {
       String errorMessage = 'Failed to purchase course';
 
       if (e is DioException) {
         print('DioException response data: ${e.response?.data}');
         print('DioException message: ${e.message}');
-
         if (e.response?.data is Map<String, dynamic>) {
-          errorMessage =
-              e.response?.data['message']?.toString() ??
+          errorMessage = e.response?.data['message']?.toString() ??
               'Error ${e.response?.statusCode}: ${e.message}';
         } else {
           errorMessage = 'Error ${e.response?.statusCode}: ${e.message}';

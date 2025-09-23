@@ -1,16 +1,24 @@
 class BuyChapterModel {
-  final int? price;
+  final double? price; // Changed from int? to double?
   final dynamic paymentMethod;
   final List<Chapter>? chapters;
+  final String? paymentLink;
 
-  BuyChapterModel({this.price, this.paymentMethod, this.chapters});
+  BuyChapterModel({
+    this.price,
+    this.paymentMethod,
+    this.chapters,
+    this.paymentLink,
+  });
 
   factory BuyChapterModel.fromJson(Map<String, dynamic> json) {
+    print('JSON Dataaaaaa444444444444: $json');
     return BuyChapterModel(
       price: json['price'] is int
-          ? json['price']
-          : int.tryParse(json['price'].toString()),
+          ? (json['price'] as int).toDouble()
+          : double.tryParse(json['price'].toString()),
       paymentMethod: json['p_method'],
+      paymentLink: json['payment_link'], // Corrected key to match JSON (if applicable)
       chapters: (json['chapters'] as List<dynamic>?)
           ?.map((e) => Chapter.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -65,7 +73,9 @@ class Chapter {
       createdAt: json['created_at']?.toString(),
       updatedAt: json['updated_at']?.toString(),
       type: json['type']?.toString(),
-      duration: json['duration'],
+      duration: json['duration'] is int
+          ? json['duration']
+          : int.tryParse(json['duration'].toString() ?? ''),
       price: (json['price'] as List<dynamic>?)
           ?.map((e) => ChapterPrice.fromJson(e as Map<String, dynamic>))
           .toList(),

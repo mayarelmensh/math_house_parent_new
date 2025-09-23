@@ -123,10 +123,9 @@ class _BuyPackageScreenState extends State<BuyPackageScreen> {
           bloc: buyPackageCubit,
           listener: (context, state) {
             if (state is BuyPackageError) {
-
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.message),
+                  content: Text(state.message!),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -140,7 +139,7 @@ class _BuyPackageScreenState extends State<BuyPackageScreen> {
             }
           },
           builder: (context, state) {
-            if (state is BuyPackageLoading) {
+            if (state is BuyPackageLoadingState) {
               return Center(
                 child: CircularProgressIndicator(color: AppColors.primaryColor),
               );

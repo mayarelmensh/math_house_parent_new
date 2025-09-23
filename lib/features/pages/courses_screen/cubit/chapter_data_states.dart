@@ -1,19 +1,20 @@
-import '../../../../data/models/chapter_data_model.dart';
+import 'package:math_house_parent_new/data/models/buy_chapter_model.dart';
 
-abstract class ChapterDataStates {}
+abstract class BuyChapterStates {}
 
-class ChapterDataInitialState extends ChapterDataStates {}
+class BuyChapterInitialState extends BuyChapterStates {}
 
-class ChapterDataLoadingState extends ChapterDataStates {}
+class BuyChapterLoadingState extends BuyChapterStates {}
 
-class ChapterDataSuccessState extends ChapterDataStates {
-  final ChapterDataEntity chapterData;
+class BuyChapterSuccessState extends BuyChapterStates {
+  final BuyChapterModel model;
+  final String? paymentLink;
 
-  ChapterDataSuccessState(this.chapterData);
+  BuyChapterSuccessState(this.model, {this.paymentLink});
 }
 
-class ChapterDataErrorState extends ChapterDataStates {
-  final String error;
+class BuyChapterErrorState extends BuyChapterStates {
+  final String? message;
 
-  ChapterDataErrorState(this.error);
+  BuyChapterErrorState(this.message);
 }

@@ -1,16 +1,18 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
+import 'package:math_house_parent_new/features/pages/courses_screen/cubit/buy_chapter_cubit.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/di/di.dart';
 import '../../../core/utils/app_colors.dart';
 import '../../../core/utils/custom_snack_bar.dart';
 import '../../../core/widgets/custom_app_bar.dart';
+import '../../../data/models/payment_methods_response_dm.dart';
 import '../../../data/models/student_selected.dart';
 import '../../../domain/entities/courses_response_entity.dart';
 import '../../../domain/entities/payment_methods_response_entity.dart';
@@ -19,7 +21,6 @@ import '../payment_methods/cubit/payment_methods_cubit.dart';
 import '../payment_methods/cubit/payment_methods_states.dart';
 import '../promo_code_screen/cubit/promo_code_cubit.dart';
 import '../promo_code_screen/cubit/promo_code_states.dart';
-import 'cubit/buy_chapter_cubit.dart';
 import 'cubit/buy_chapter_states.dart';
 import 'cubit/buy_course_cubit.dart';
 import 'cubit/buy_course_states.dart';
@@ -36,8 +37,7 @@ class BuyCourseScreen extends StatefulWidget {
   State<BuyCourseScreen> createState() => _BuyCourseScreenState();
 }
 
-class _BuyCourseScreenState extends State<BuyCourseScreen>
-    with TickerProviderStateMixin {
+class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   String _searchQuery = '';
@@ -46,9 +46,9 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
   String? base64String;
   Uint8List? imageBytes;
   ChapterDataCubit chapterDataCubit = getIt<ChapterDataCubit>();
+  BuyCourseCubit buyCourseCubit = getIt<BuyCourseCubit>();
 
   bool get isTablet => MediaQuery.of(context).size.width > 600;
-
   bool get isDesktop => MediaQuery.of(context).size.width > 1024;
 
   @override
@@ -380,7 +380,10 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
               ),
               child: Text(
                 'Try Again',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: isTablet ? 16.sp : 14.sp),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: isTablet ? 16.sp : 14.sp,
+                ),
               ),
             ),
           ],
@@ -434,7 +437,10 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
             SizedBox(height: 8.h),
             Text(
               'Check back later for new courses',
-              style: TextStyle(fontSize: isTablet ? 16.sp : 14.sp, color: AppColors.grey[600]),
+              style: TextStyle(
+                fontSize: isTablet ? 16.sp : 14.sp,
+                color: AppColors.grey[600],
+              ),
             ),
           ],
         ),
@@ -442,7 +448,6 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
     );
   }
 
-  // Helper methods
   List<CourseEntity> _filterCourses(
       List<CourseEntity> courses,
       List<CategoriesEntity> categories,
@@ -705,7 +710,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
   }) {
     final paymentMethodsCubit = getIt<PaymentMethodsCubit>();
     final buyCourseCubit = getIt<BuyCourseCubit>();
-    final buyChapterCubit = getIt<BuyChapterCubit>();
+    final chapterDataCubit = getIt<BuyChapterCubit>();
     final promoCodeCubit = getIt<PromoCodeCubit>();
 
     dynamic selectedPaymentMethodId = 'Wallet';
@@ -743,7 +748,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                 providers: [
                   BlocProvider.value(value: paymentMethodsCubit),
                   BlocProvider.value(value: buyCourseCubit),
-                  BlocProvider.value(value: buyChapterCubit),
+                  BlocProvider.value(value: chapterDataCubit),
                   BlocProvider.value(value: promoCodeCubit),
                 ],
                 child: MultiBlocListener(
@@ -751,16 +756,28 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                     BlocListener<BuyCourseCubit, BuyCourseStates>(
                       listener: (context, state) {
                         if (state is BuyCourseSuccessState) {
-                          showTopSnackBar(
-                            context,
-                            'Course "${state.response.course?.courseName ?? 'Unknown'}" purchased successfully!',
-                            AppColors.green,
-                          );
-                          Navigator.pop(context);
+                          if (state.paymentLink != null && state.paymentLink!.isNotEmpty) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => WebViewScreen(
+                                  url: state.paymentLink!,
+                                  title: 'Complete Payment',
+                                ),
+                              ),
+                            );
+                          } else {
+                            showTopSnackBar(
+                              context,
+                              'Course purchased successfully!',
+                              AppColors.green,
+                            );
+                            Navigator.pop(context);
+                          }
                         } else if (state is BuyCourseErrorState) {
                           showTopSnackBar(
                             context,
-                            'Something went wrong, please try again',
+                            state.message ?? 'Something went wrong, please try again',
                             AppColors.red,
                           );
                         }
@@ -769,22 +786,33 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                     BlocListener<BuyChapterCubit, BuyChapterStates>(
                       listener: (context, state) {
                         if (state is BuyChapterSuccessState) {
-                          showTopSnackBar(
-                            context,
-                            'Chapter "${state.model.chapters?.first.chapterName ?? 'Unknown'}" purchased successfully!',
-                            AppColors.green,
-                          );
-                          Navigator.pop(context);
+                          if (state.paymentLink != null && state.paymentLink!.isNotEmpty) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => WebViewScreen(
+                                  url: state.paymentLink!,
+                                  title: 'Complete Payment',
+                                ),
+                              ),
+                            );
+                          } else {
+                            showTopSnackBar(
+                              context,
+                              'Chapter purchased successfully!',
+                              AppColors.green,
+                            );
+                            Navigator.pop(context);
+                          }
                         } else if (state is BuyChapterErrorState) {
                           showTopSnackBar(
                             context,
-                            'Something went wrong, please try again',
+                            state.error ?? 'Something went wrong, please try again',
                             AppColors.red,
                           );
                         }
                       },
-                    ),
-                    BlocListener<PromoCodeCubit, PromoCodeStates>(
+                    ),                    BlocListener<PromoCodeCubit, PromoCodeStates>(
                       listener: (context, state) {
                         if (state is PromoCodeSuccessState) {
                           setModalState(() {
@@ -796,7 +824,11 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                             AppColors.green,
                           );
                         } else if (state is PromoCodeErrorState) {
-                          showTopSnackBar(context, 'Invalid promo code, please try again', AppColors.red);
+                          showTopSnackBar(
+                            context,
+                            'Invalid promo code, please try again',
+                            AppColors.red,
+                          );
                         }
                       },
                     ),
@@ -834,7 +866,9 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                         Expanded(
                           child: ListView(
                             controller: scrollController,
-                            padding: EdgeInsets.symmetric(horizontal: isTablet ? 24.w : 16.w),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isTablet ? 24.w : 16.w,
+                            ),
                             children: [
                               Text(
                                 chapter == null
@@ -856,7 +890,9 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                                       decoration: BoxDecoration(
                                         color: AppColors.grey[50],
                                         borderRadius: BorderRadius.circular(12.r),
-                                        border: Border.all(color: AppColors.grey[200]!),
+                                        border: Border.all(
+                                          color: AppColors.grey[200]!,
+                                        ),
                                       ),
                                       child: Column(
                                         children: [
@@ -929,11 +965,15 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                                                             hintText: 'Enter promo code',
                                                             border: OutlineInputBorder(
                                                               borderRadius: BorderRadius.circular(8.r),
-                                                              borderSide: BorderSide(color: AppColors.grey[300]!),
+                                                              borderSide: BorderSide(
+                                                                color: AppColors.grey[300]!,
+                                                              ),
                                                             ),
                                                             focusedBorder: OutlineInputBorder(
                                                               borderRadius: BorderRadius.circular(8.r),
-                                                              borderSide: BorderSide(color: AppColors.primary),
+                                                              borderSide: BorderSide(
+                                                                color: AppColors.primary,
+                                                              ),
                                                             ),
                                                             contentPadding: EdgeInsets.symmetric(
                                                               horizontal: isTablet ? 16.w : 12.w,
@@ -1009,7 +1049,9 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                                                       decoration: BoxDecoration(
                                                         color: AppColors.green.withOpacity(0.1),
                                                         borderRadius: BorderRadius.circular(8.r),
-                                                        border: Border.all(color: AppColors.green.withOpacity(0.3)),
+                                                        border: Border.all(
+                                                          color: AppColors.green.withOpacity(0.3),
+                                                        ),
                                                       ),
                                                       child: Row(
                                                         children: [
@@ -1073,7 +1115,9 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(12.r),
-                                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                                  border: Border.all(
+                                    color: AppColors.primary.withOpacity(0.3),
+                                  ),
                                 ),
                                 child: Column(
                                   children: [
@@ -1133,7 +1177,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                                   color: AppColors.grey[700],
                                 ),
                               ),
-                              if (selectedPaymentMethodId != 'Wallet') ...[
+                              if (selectedPaymentMethodId != 'Wallet' && selectedPaymentMethodId != '10') ...[
                                 SizedBox(height: 16.h),
                                 if (imageBytes != null)
                                   Container(
@@ -1159,15 +1203,17 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                                       borderRadius: BorderRadius.circular(12.r),
                                       color: Colors.grey[200],
                                     ),
-                                    child: Icon(Icons.image, size: isTablet ? 48.sp : 40.sp),
+                                    child: Icon(
+                                      Icons.image,
+                                      size: isTablet ? 48.sp : 40.sp,
+                                    ),
                                   ),
                                 SizedBox(height: 8.h),
                                 Row(
                                   children: [
                                     Expanded(
                                       child: ElevatedButton.icon(
-                                        onPressed: () =>
-                                            _showImageSourceBottomSheet(context, setModalState),
+                                        onPressed: () => _showImageSourceBottomSheet(context, setModalState),
                                         icon: Icon(Icons.upload_file, color: AppColors.white),
                                         label: Text(
                                           'Upload Invoice Image',
@@ -1220,16 +1266,25 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                                 builder: (context, state) {
                                   if (state is PaymentMethodsLoadingState) {
                                     return Center(
-                                      child: CircularProgressIndicator(color: AppColors.primary),
+                                      child: CircularProgressIndicator(
+                                        color: AppColors.primary,
+                                      ),
                                     );
                                   } else if (state is PaymentMethodsSuccessState) {
                                     final methods = [
-                                      PaymentMethodEntity(
+                                      PaymentMethodDm(
                                         id: 'Wallet',
                                         payment: 'Wallet',
                                         paymentType: 'Wallet',
                                         description: 'Pay using your wallet balance',
                                         logo: '',
+                                      ),
+                                      PaymentMethodDm(
+                                        id: '10',
+                                        payment: 'Visacard/ Mastercard',
+                                        paymentType: 'integration',
+                                        description: 'Pay using Paymob',
+                                        logo: 'https://cdn.paymob.com/images/logos/paymob-logo.png',
                                       ),
                                       ...?state.paymentMethodsResponse.paymentMethods,
                                     ];
@@ -1324,7 +1379,10 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                                                             ),
                                                             SizedBox(height: 4.h),
                                                             Container(
-                                                              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                                                              padding: EdgeInsets.symmetric(
+                                                                horizontal: 12.w,
+                                                                vertical: 4.h,
+                                                              ),
                                                               decoration: BoxDecoration(
                                                                 color: _getPaymentTypeColor(method.paymentType),
                                                                 borderRadius: BorderRadius.circular(12.r),
@@ -1351,7 +1409,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                                                   ),
                                                   if (method.description != null &&
                                                       method.description!.isNotEmpty &&
-                                                      method.paymentType?.toLowerCase() != 'wallet') ...[
+                                                      method.id != '10') ...[
                                                     SizedBox(height: 12.h),
                                                     InkWell(
                                                       onTap: () => _handlePaymentDescription(method.description!),
@@ -1360,7 +1418,9 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                                                         decoration: BoxDecoration(
                                                           color: AppColors.primary.withOpacity(0.1),
                                                           borderRadius: BorderRadius.circular(8.r),
-                                                          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                                                          border: Border.all(
+                                                            color: AppColors.primary.withOpacity(0.3),
+                                                          ),
                                                         ),
                                                         child: Row(
                                                           children: [
@@ -1389,6 +1449,40 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                                                             ),
                                                           ],
                                                         ),
+                                                      ),
+                                                    ),
+                                                  ] else if (method.id == '10') ...[
+                                                    SizedBox(height: 12.h),
+                                                    Container(
+                                                      padding: EdgeInsets.all(isTablet ? 16.w : 12.w),
+                                                      decoration: BoxDecoration(
+                                                        color: AppColors.primary.withOpacity(0.1),
+                                                        borderRadius: BorderRadius.circular(8.r),
+                                                        border: Border.all(
+                                                          color: AppColors.primary.withOpacity(0.3),
+                                                        ),
+                                                      ),
+                                                      child: Row(
+                                                        children: [
+                                                          Icon(
+                                                            Icons.info_outline,
+                                                            color: AppColors.primary,
+                                                            size: isTablet ? 20.sp : 16.sp,
+                                                          ),
+                                                          SizedBox(width: 8.w),
+                                                          Expanded(
+                                                            child: Text(
+                                                              'Press "Confirm Purchase" to proceed with the payment link',
+                                                              style: TextStyle(
+                                                                fontSize: isTablet ? 16.sp : 14.sp,
+                                                                color: AppColors.primary,
+                                                                fontWeight: FontWeight.w500,
+                                                              ),
+                                                              maxLines: 2,
+                                                              overflow: TextOverflow.ellipsis,
+                                                            ),
+                                                          ),
+                                                        ],
                                                       ),
                                                     ),
                                                   ],
@@ -1431,10 +1525,13 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                           ),
                           child: ElevatedButton(
                             onPressed: (selectedPaymentMethodId != null &&
-                                (selectedPaymentMethodId == 'Wallet' || base64String != null))
+                                (selectedPaymentMethodId == 'Wallet' ||
+                                    selectedPaymentMethodId == '10' ||
+                                    base64String != null))
                                 ? () async {
                               String imageData;
-                              if (selectedPaymentMethodId == 'Wallet') {
+                              if (selectedPaymentMethodId == 'Wallet' ||
+                                  selectedPaymentMethodId == '10') {
                                 imageData = 'wallet';
                               } else {
                                 if (base64String == null) {
@@ -1451,34 +1548,38 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
 
                               try {
                                 if (chapter == null) {
+                                  // تأكد من إرسال البيانات بالشكل الصحيح مع double quotes و $
                                   await buyCourseCubit.buyPackage(
-                                    courseId: course.id!,
-                                    paymentMethodId: selectedPaymentMethodId!,
-                                    amount: finalPrice,
-                                    userId: SelectedStudent.studentId,
-                                    duration: course.allPrices?.isNotEmpty == true
+                                    courseId: "${course.id!}",
+                                    paymentMethodId: "${selectedPaymentMethodId!}",
+                                    amount: "${finalPrice.toStringAsFixed(2)}",
+                                    userId: "${SelectedStudent.studentId}",
+                                    duration: "${(course.allPrices?.isNotEmpty == true
                                         ? course.allPrices!.first.duration ?? 30
-                                        : 30,
+                                        : 30)}",
                                     image: imageData,
-                                    promoCode: newPrice != null ? int.tryParse(promoController.text) : null,
+                                    promoCode: promoController.text.isNotEmpty ? promoController.text : null,
                                   );
                                 } else {
-                                  await buyChapterCubit.buyChapter(
-                                    courseId: course.id!,
-                                    paymentMethodId: selectedPaymentMethodId!,
-                                    amount: finalPrice,
-                                    userId: SelectedStudent.studentId,
-                                    chapterId: chapter.id!,
-                                    duration: chapter.chapterAllPrices?.isNotEmpty == true
+                                  // تأكد من إرسال البيانات بالشكل الصحيح مع double quotes و $
+                                  await chapterDataCubit.buyChapter(
+                                    courseId: "${course.id!}",
+                                    paymentMethodId: "${selectedPaymentMethodId!}",
+                                    amount: "${finalPrice.toStringAsFixed(2)}",
+                                    userId: "${SelectedStudent.studentId}",
+                                    chapterId: "${chapter.id!}",
+                                    duration: "${(chapter.chapterAllPrices?.isNotEmpty == true
                                         ? chapter.chapterAllPrices!.first.duration ?? 30
-                                        : 30,
+                                        : 30)}",
                                     image: imageData,
+                                    promoCode: promoController.text.isNotEmpty ? promoController.text : null,
                                   );
                                 }
                               } catch (e) {
+                                print('Error in purchase: $e');
                                 showTopSnackBar(
                                   context,
-                                  'Something went wrong, please try again',
+                                  'Something went wrong, please try again: $e',
                                   AppColors.red,
                                 );
                               }
@@ -1489,7 +1590,9 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12.r),
                               ),
-                              padding: EdgeInsets.symmetric(vertical: isTablet ? 20.h : 16.h),
+                              padding: EdgeInsets.symmetric(
+                                vertical: isTablet ? 20.h : 16.h,
+                              ),
                               minimumSize: Size(double.infinity, isTablet ? 56.h : 50.h),
                             ),
                             child: Text(
@@ -1517,7 +1620,8 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
   }
 
   bool _isUrl(String text) {
-    return Uri.tryParse(text) != null && (text.startsWith('http://') || text.startsWith('https://'));
+    return Uri.tryParse(text) != null &&
+        (text.startsWith('http://') || text.startsWith('https://'));
   }
 
   void _handlePaymentDescription(String description) async {
@@ -1525,14 +1629,15 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
       try {
         final uri = Uri.parse(description);
         final canLaunch = await canLaunchUrl(uri);
-
         if (canLaunch) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
         } else {
           await launchUrl(
             uri,
             mode: LaunchMode.inAppWebView,
-            webViewConfiguration: const WebViewConfiguration(enableJavaScript: true),
+            webViewConfiguration: const WebViewConfiguration(
+              enableJavaScript: true,
+            ),
           );
         }
       } catch (e) {
@@ -1548,7 +1653,10 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
     }
   }
 
-  void _showImageSourceBottomSheet(BuildContext parentContext, StateSetter setModalState) {
+  void _showImageSourceBottomSheet(
+      BuildContext parentContext,
+      StateSetter setModalState,
+      ) {
     showModalBottomSheet(
       context: parentContext,
       shape: RoundedRectangleBorder(
@@ -1561,7 +1669,10 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
           children: [
             Text(
               'Select Image Source',
-              style: TextStyle(fontSize: isTablet ? 20.sp : 18.sp, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: isTablet ? 20.sp : 18.sp,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             SizedBox(height: 20.h),
             Row(
@@ -1583,7 +1694,12 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                             color: AppColors.primary,
                           ),
                           SizedBox(height: 8.h),
-                          Text('Camera', style: TextStyle(fontSize: isTablet ? 16.sp : 14.sp)),
+                          Text(
+                            'Camera',
+                            style: TextStyle(
+                              fontSize: isTablet ? 16.sp : 14.sp,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -1607,7 +1723,12 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
                             color: AppColors.primary,
                           ),
                           SizedBox(height: 8.h),
-                          Text('Gallery', style: TextStyle(fontSize: isTablet ? 16.sp : 14.sp)),
+                          Text(
+                            'Gallery',
+                            style: TextStyle(
+                              fontSize: isTablet ? 16.sp : 14.sp,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -1629,7 +1750,6 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
       ) async {
     try {
       Navigator.pop(bottomSheetContext);
-
       final picker = ImagePicker();
       final XFile? pickedFile = await picker.pickImage(
         source: source,
@@ -1637,31 +1757,19 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
         maxHeight: 1080,
         imageQuality: 85,
       );
-
       if (pickedFile != null) {
         final File imageFile = File(pickedFile.path);
         final List<int> imageFileBytes = await imageFile.readAsBytes();
         final String imageBase64 = base64Encode(imageFileBytes);
-
         setState(() {
           imageBytes = Uint8List.fromList(imageFileBytes);
           base64String = imageBase64;
         });
-
         setModalState(() {});
-
-        showTopSnackBar(
-          context,
-          'Payment proof uploaded successfully',
-          AppColors.green,
-        );
+        showTopSnackBar(context, 'Payment proof uploaded successfully', AppColors.green);
       }
     } catch (e) {
-      showTopSnackBar(
-        context,
-        'Something went wrong, please try again',
-        AppColors.red,
-      );
+      showTopSnackBar(context, 'Something went wrong, please try again', AppColors.red);
     }
   }
 
@@ -1697,6 +1805,101 @@ class _BuyCourseScreenState extends State<BuyCourseScreen>
       default:
         return 'Other';
     }
+  }
+}
+
+class WebViewScreen extends StatefulWidget {
+  final String url;
+  final String title;
+
+  const WebViewScreen({super.key, required this.url, required this.title});
+
+  @override
+  State<WebViewScreen> createState() => _WebViewScreenState();
+}
+
+class _WebViewScreenState extends State<WebViewScreen> {
+  late final WebViewController _controller;
+  bool _isLoading = true;
+  bool _hasError = false;
+
+  bool get isTablet => MediaQuery.of(context).size.width > 600;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (url) {
+            setState(() {
+              _isLoading = true;
+              _hasError = false;
+            });
+          },
+          onPageFinished: (url) {
+            setState(() {
+              _isLoading = false;
+            });
+          },
+          onWebResourceError: (error) {
+            setState(() {
+              _isLoading = false;
+              _hasError = true;
+            });
+            showTopSnackBar(
+              context,
+              'Failed to load payment page: ${error.description}',
+              AppColors.red,
+            );
+          },
+          onNavigationRequest: (request) {
+            if (request.url.contains('success=true')) {
+              showTopSnackBar(context, 'Payment completed successfully!', AppColors.green);
+              Navigator.pop(context); // Close WebView
+              Navigator.pop(context); // Close bottom sheet
+              return NavigationDecision.prevent;
+            } else if (request.url.contains('success=false')) {
+              showTopSnackBar(context, 'Payment failed, please try again', AppColors.red);
+              Navigator.pop(context); // Close WebView
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.url));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        centerTitle: true,
+        title: Text(widget.title),
+        foregroundColor: AppColors.primary,
+      ),
+      body: Stack(
+        children: [
+          WebViewWidget(controller: _controller),
+          if (_isLoading)
+            Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          if (_hasError)
+            Center(
+              child: Text(
+                'Failed to load payment page',
+                style: TextStyle(
+                  fontSize: isTablet ? 18.sp : 16.sp,
+                  color: AppColors.red,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1842,7 +2045,11 @@ class _CourseCardState extends State<CourseCard> with SingleTickerProviderStateM
         ),
       ),
       child: Center(
-        child: Icon(Icons.school, size: isTablet ? 48.sp : 40.sp, color: AppColors.primary),
+        child: Icon(
+          Icons.school,
+          size: isTablet ? 48.sp : 40.sp,
+          color: AppColors.primary,
+        ),
       ),
     );
   }
@@ -1942,7 +2149,10 @@ class _CourseCardState extends State<CourseCard> with SingleTickerProviderStateM
 
   Widget _buildPriceSection() {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: isTablet ? 16.w : 12.w, vertical: isTablet ? 8.h : 6.h),
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 16.w : 12.w,
+        vertical: isTablet ? 8.h : 6.h,
+      ),
       decoration: BoxDecoration(
         color: AppColors.green.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8.r),
@@ -1951,7 +2161,11 @@ class _CourseCardState extends State<CourseCard> with SingleTickerProviderStateM
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.monetization_on, size: isTablet ? 18.sp : 16.sp, color: AppColors.green),
+          Icon(
+            Icons.monetization_on,
+            size: isTablet ? 18.sp : 16.sp,
+            color: AppColors.green,
+          ),
           SizedBox(width: 4.w),
           Text(
             '${widget.course.price} EGP',
