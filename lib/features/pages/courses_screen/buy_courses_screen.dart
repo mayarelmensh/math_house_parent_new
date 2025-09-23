@@ -598,7 +598,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                             ),
                             subtitle: chapter.chapterPrice != null
                                 ? Text(
-                              "Price: ${chapter.chapterPrice} EGP",
+                              "Price: ${chapter.chapterPrice} ",
                               style: TextStyle(color: AppColors.green),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -675,7 +675,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                             ),
                             SizedBox(height: 8.h),
                             Text(
-                              "${course.price} EGP",
+                              "${course.price} ",
                               style: TextStyle(
                                 fontSize: isTablet ? 26.sp : 24.sp,
                                 fontWeight: FontWeight.bold,

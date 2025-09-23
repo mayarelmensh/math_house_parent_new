@@ -432,7 +432,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
                                   ),
                                 ),
                                 Text(
-                                  "${package.duration ?? 0} mins",
+                                  "${package.duration ?? 0} days",
                                   style: TextStyle(
                                     fontSize: 16.sp,
                                     color: Colors.blue.shade700,
