@@ -154,6 +154,8 @@ class _PaymentScreenViewState extends State<PaymentScreenView> {
                   _buildFilterChip('pending', 'Pending'),
                   SizedBox(width: 8.w),
                   _buildFilterChip('approved', 'Approved'),
+                  SizedBox(width: 8.w),
+                  _buildFilterChip('in_progress', 'In Progress'),
                 ],
               ),
             ),

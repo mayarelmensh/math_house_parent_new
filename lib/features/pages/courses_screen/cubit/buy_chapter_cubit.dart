@@ -103,4 +103,27 @@ class BuyChapterCubit extends Cubit<BuyChapterStates> {
       emit(BuyChapterErrorState(errorMessage));
     }
   }
+
+  // Add method to handle payment result from WebView
+  void handlePaymentResult(String url) {
+    print('Handling Chapter Payment Result: $url');
+    if (url.contains('success=true') &&
+        url.contains('txn_response_code=APPROVED') &&
+        url.contains('error_occured=false')) {
+      // Payment successful
+      emit(BuyChapterSuccessState(BuyChapterModel(), null));
+    } else if (url.contains('success=false') ||
+        url.contains('error_occured=true') ||
+        url.contains('txn_response_code=DECLINED')) {
+      String errorMessage = 'Payment failed';
+      if (url.contains('txn_response_code=DECLINED')) {
+        errorMessage = 'Payment was declined by the payment gateway';
+      } else if (url.contains('error_occured=true')) {
+        errorMessage = 'An error occurred during payment processing';
+      }
+      emit(BuyChapterErrorState(errorMessage));
+    } else if (url == 'cancelled') {
+      emit(BuyChapterErrorState('Payment cancelled by user'));
+    }
+  }
 }

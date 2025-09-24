@@ -73,7 +73,7 @@ class HomeTab extends StatelessWidget {
                   HomeCard(
                     icon: Icons.attach_money,
                     title: "Packages",
-                    subtitle: "View students",
+                    subtitle: " Go To Buy packages",
                     onTap: () {
                       Navigator.pushNamed(context, AppRoutes.packagesScreen);
                     },
@@ -126,7 +126,7 @@ class HomeTab extends StatelessWidget {
                 color: AppColors.primaryColor,
               ),
             ),
-            SizedBox(height: 8.h),
+            SizedBox(height: 2.h),
             BlocBuilder<MyPackageCubit, MyPackageState>(
               builder: (context, state) {
                 if (state is MyPackageInitial) {
@@ -222,38 +222,43 @@ class HomeTab extends StatelessWidget {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Error Loading Packages',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.red,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                        Text(
+                          'Error Loading Packages',
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.red,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 8.h),
+                        TextButton(
+                          onPressed: () {
+                            context.read<MyPackageCubit>().fetchMyPackageData(
+                              userId: SelectedStudent.studentId,
+                            );
+                          },
+                          child: Text(
+                            'Try Again',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],),
+                      SizedBox(height: 3.h),
                       Text(
                         'You must check if you have selected your student.',
                         style: TextStyle(
                           fontSize: 14.sp,
-                          color: AppColors.darkGrey,
+                          color: AppColors.black,
                         ),
                       ),
-                      SizedBox(height: 8.h),
-                      TextButton(
-                        onPressed: () {
-                          context.read<MyPackageCubit>().fetchMyPackageData(
-                            userId: SelectedStudent.studentId,
-                          );
-                        },
-                        child: Text(
-                          'Try Again',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                      SizedBox(height: 2.h),
+
                     ],
                   );
                 }

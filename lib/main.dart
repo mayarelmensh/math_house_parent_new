@@ -14,6 +14,7 @@ import 'package:math_house_parent_new/features/pages/payment_invoice/payment_inv
 import 'package:math_house_parent_new/features/pages/payment_methods/buy_package_screen.dart';
 import 'package:math_house_parent_new/features/pages/payment_methods/payment_methods_screen.dart';
 import 'package:math_house_parent_new/features/pages/profile_screen/profile_screen.dart';
+import 'package:math_house_parent_new/features/pages/promo_code_screen/cubit/promo_code_cubit.dart';
 import 'package:math_house_parent_new/features/pages/recharge_wallet_screen/recharge_wallet_screen.dart';
 import 'package:math_house_parent_new/features/pages/splash_screen/splash_screen.dart';
 import 'package:math_house_parent_new/features/pages/students_screen/my_students_screen.dart';
@@ -86,6 +87,7 @@ class MyApp extends StatelessWidget {
             BlocProvider(create: (_) => getIt<MyPackageCubit>()),
             BlocProvider(create: (_) => getIt<MyCoursesCubit>()),
             BlocProvider(create: (_) => getIt<BuyChapterCubit>()),
+            BlocProvider(create: (_) => getIt<PromoCodeCubit>()),
           ],
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
@@ -100,8 +102,7 @@ class MyApp extends StatelessWidget {
                   MainScreen(initialTabIndex: initialTabIndex),
               AppRoutes.confirmationScreen: (context) => ConfirmationScreen(),
               AppRoutes.packagesScreen: (context) => PackagesScreen(),
-              AppRoutes.paymentMethodsScreen: (context) =>
-                  PaymentMethodsScreen(),
+              AppRoutes.paymentMethodsScreen: (context) => PaymentMethodsScreen(),
               // AppRoutes.myStudentScreen: (context) => MyStudentsScreen(), // تعطيل هذا الـ route
               AppRoutes.buyPackageScreen: (context) => BuyPackageScreen(),
               AppRoutes.paymentHistory: (context) => PaymentHistoryScreen(),
@@ -194,11 +195,15 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: _screens[_selectedIndex],
       bottomNavigationBar: Container(
+        margin: EdgeInsets.symmetric(horizontal: 20.w,vertical: 15.h),
+        padding: EdgeInsets.symmetric(horizontal: 20.w),
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(40.r),
             topRight: Radius.circular(40.r),
+            bottomLeft:Radius.circular(40.r) ,
+            bottomRight: Radius.circular(40.r)
           ),
           boxShadow: [
             BoxShadow(
@@ -209,6 +214,7 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
         child: BottomNavigationBar(
+
           backgroundColor: Colors.transparent,
           elevation: 0,
           currentIndex: _selectedIndex,

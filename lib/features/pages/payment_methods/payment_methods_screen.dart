@@ -701,7 +701,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
 
   Widget _buildPaymentProofSection() {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 0.h),
       padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
@@ -745,7 +745,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
           else
             Container(
               width: double.infinity,
-              height: 80.h,
+              height: 40.h,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10.r),
                 color: Colors.grey.shade100,
@@ -759,10 +759,10 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                 children: [
                   Icon(
                     Icons.cloud_upload_outlined,
-                    size: 28.sp,
+                    size: 22.sp,
                     color: Colors.grey.shade400,
                   ),
-                  SizedBox(height: 6.h),
+                  SizedBox(height: 2.h),
                   Text(
                     'No image selected',
                     style: TextStyle(
