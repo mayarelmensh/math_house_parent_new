@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:math_house_parent_new/features/auth/forget_password_screen/forget_password_screen.dart';
+import 'package:math_house_parent_new/features/pages/courses_screen/cources_payment_method_screen.dart';
 import 'package:math_house_parent_new/features/pages/courses_screen/cubit/buy_chapter_cubit.dart';
 import 'package:math_house_parent_new/features/pages/courses_screen/cubit/courses_cubit.dart';
 import 'package:math_house_parent_new/features/pages/courses_screen/select_screen.dart';
@@ -117,6 +118,7 @@ class MyApp extends StatelessWidget {
               AppRoutes.splashScreen: (context) => SplashScreen(),
               AppRoutes.paymentsScreen: (context) => const PaymentsScreen(),
               AppRoutes.selectScreen: (context) => SelectScreen(),
+              // AppRoutes.coursesPaymentScreen: (context) => CoursesPaymentMethodsScreen(),
             },
           ),
         );

@@ -19,6 +19,7 @@ import 'cubit/payment_methods_cubit.dart';
 import 'cubit/payment_methods_states.dart';
 import 'cubit/buy_package_cubit.dart';
 import '../../../core/utils/custom_snack_bar.dart';
+import 'dart:developer' as developer;
 
 class PaymentMethodsScreen extends StatefulWidget {
   const PaymentMethodsScreen({Key? key}) : super(key: key);
@@ -50,12 +51,15 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
     logo: '',
   );
 
+  bool get isTablet => MediaQuery.of(context).size.width > 600;
+  bool get isDesktop => MediaQuery.of(context).size.width > 1024;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args =
-          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
       setState(() {
         packageId = args?['packageId'] as int?;
@@ -95,23 +99,17 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
           base64String = imageBase64;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Payment proof uploaded successfully'),
-            backgroundColor: AppColors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            duration: const Duration(seconds: 2),
-          ),
+        showTopSnackBar(
+          context,
+          'Payment proof uploaded successfully',
+          AppColors.green,
         );
       }
     } catch (e) {
       showTopSnackBar(
         context,
         'Error selecting image: ${e.toString()}',
-        AppColors.primaryColor,
+        AppColors.red,
       );
     }
   }
@@ -123,15 +121,18 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
       builder: (context) => Container(
-        padding: EdgeInsets.all(16.w),
+        padding: EdgeInsets.all(isTablet ? 24.w : 20.w),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'Select Image Source',
-              style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: isTablet ? 20.sp : 18.sp,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            SizedBox(height: 16.h),
+            SizedBox(height: 20.h),
             Row(
               children: [
                 Expanded(
@@ -141,26 +142,31 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                       pickImage(ImageSource.camera);
                     },
                     child: Container(
-                      padding: EdgeInsets.all(16.w),
+                      padding: EdgeInsets.all(isTablet ? 24.w : 20.w),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(10.r),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
                       child: Column(
                         children: [
                           Icon(
                             Icons.camera_alt,
-                            size: 32.sp,
-                            color: AppColors.primaryColor,
+                            size: isTablet ? 48.sp : 40.sp,
+                            color: AppColors.primary,
                           ),
-                          SizedBox(height: 6.h),
-                          Text('Camera'),
+                          SizedBox(height: 8.h),
+                          Text(
+                            'Camera',
+                            style: TextStyle(
+                              fontSize: isTablet ? 16.sp : 14.sp,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ),
                 ),
-                SizedBox(width: 12.w),
+                SizedBox(width: 16.w),
                 Expanded(
                   child: InkWell(
                     onTap: () {
@@ -168,20 +174,25 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                       pickImage(ImageSource.gallery);
                     },
                     child: Container(
-                      padding: EdgeInsets.all(16.w),
+                      padding: EdgeInsets.all(isTablet ? 24.w : 20.w),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(10.r),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
                       child: Column(
                         children: [
                           Icon(
                             Icons.photo_library,
-                            size: 32.sp,
-                            color: AppColors.primaryColor,
+                            size: isTablet ? 48.sp : 40.sp,
+                            color: AppColors.primary,
                           ),
-                          SizedBox(height: 6.h),
-                          Text('Gallery'),
+                          SizedBox(height: 8.h),
+                          Text(
+                            'Gallery',
+                            style: TextStyle(
+                              fontSize: isTablet ? 16.sp : 14.sp,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -189,7 +200,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                 ),
               ],
             ),
-            SizedBox(height: 16.h),
+            SizedBox(height: 20.h),
           ],
         ),
       ),
@@ -200,164 +211,72 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
     return Container(
       width: double.infinity,
       margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-      padding: EdgeInsets.all(10.w),
+      padding: EdgeInsets.all(isTablet ? 20.w : 13.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withOpacity(0.1),
+            AppColors.primary.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12.r),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryColor.withOpacity(0.08),
-            blurRadius: 8,
-            offset: Offset(0, 2.h),
-            spreadRadius: 0.5,
-          ),
-        ],
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: EdgeInsets.all(6.w),
-            decoration: BoxDecoration(
-              color: AppColors.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: Icon(
-              Icons.shopping_bag,
-              color: AppColors.primaryColor,
-              size: 16.sp,
-            ),
-          ),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  packageName ?? "N/A",
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primaryColor,
-                  ),
+
+         Row(
+           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+           children: [
+             Text(
+               packageName ?? "N/A",
+               style: TextStyle(
+                 fontSize: isTablet ? 18.sp : 16.sp,
+                 fontWeight: FontWeight.bold,
+                 color: AppColors.grey[800],
+               ),
+               maxLines: 1,
+               overflow: TextOverflow.ellipsis,
+             ),
+
+             Text(
+               'Duration: ${packageDuration ?? 30} days',
+               style: TextStyle(
+                 fontSize: isTablet ? 16.sp : 14.sp,
+                 color: AppColors.grey[700],
+               ),
+             ),
+           ],
+         ),
+          SizedBox(height: 5.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Final Price:',
+                style: TextStyle(
+                  fontSize: isTablet ? 18.sp : 16.sp,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.grey[800],
                 ),
-                SizedBox(height: 4.h),
-                Row(
-                  children: [
-                    Text(
-                      packageModule ?? "N/A",
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: _getModuleColor(packageModule),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    Text(
-                      "${packageDuration ?? 0} Days",
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    Text(
-                      "\$${packagePrice ?? 0}",
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: Colors.green.shade600,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+              ),
+              Text(
+                '${packagePrice?.toStringAsFixed(2) ?? "0.00"} EGP',
+                style: TextStyle(
+                  fontSize: isTablet ? 20.sp : 18.sp,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.green,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+
         ],
       ),
     );
-  }
-
-  Widget _buildInfoItem({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Container(
-          padding: EdgeInsets.all(6.w),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(6.r),
-          ),
-          child: Icon(icon, color: color, size: 14.sp),
-        ),
-        SizedBox(height: 4.h),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 8.sp,
-            color: Colors.grey.shade600,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        SizedBox(height: 2.h),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 10.sp,
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
-  void confirmPurchase() async {
-    if (selectedMethod == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a payment method'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    String imageData;
-    if (selectedMethod!.id == 'Wallet') {
-      imageData = 'wallet';
-    } else {
-      if (base64String == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please upload the invoice image'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-      imageData = 'data:image/jpeg;base64,$base64String';
-    }
-   print("imageDataaaaaaaaaaaaaa:$imageData");
-    try {
-      await buyPackageCubit.buyPackage(
-        packageId: packageId!,
-        paymentMethodId: selectedMethod!.id!,
-        userId: SelectedStudent.studentId,
-        image: imageData,
-      );
-    } catch (e) {
-      showTopSnackBar(
-        context,
-        'Error confirming purchase: ${e.toString()}',
-        AppColors.primaryColor,
-      );
-    }
   }
 
   Color _getPaymentTypeColor(String? type) {
@@ -413,76 +332,78 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       onTap: () {
         setState(() {
           selectedMethod = method;
-          if (method.id == 'Wallet') {
+          if (method.id == 'Wallet' || method.id == '10') {
             imageBytes = null;
             base64String = null;
           }
         });
       },
       child: Container(
-        margin: EdgeInsets.only(bottom: 12.h),
+        margin: EdgeInsets.only(bottom: 16.h),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: isSelected
                 ? [
-                    AppColors.primaryColor.withOpacity(0.15),
-                    AppColors.primaryColor.withOpacity(0.05),
-                  ]
-                : [AppColors.white, Colors.grey.shade50],
+              AppColors.primary.withOpacity(0.3),
+              AppColors.primary.withOpacity(0.1),
+            ]
+                : [
+              AppColors.white,
+              AppColors.lightGray,
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(16.r),
           border: Border.all(
-            color: isSelected ? AppColors.primaryColor : Colors.grey.shade200,
-            width: isSelected ? 1.5.w : 1.w,
+            color: isSelected ? AppColors.primary : AppColors.grey[300]!,
+            width: isSelected ? 3.w : 1.w,
           ),
           boxShadow: [
             BoxShadow(
-              color: isSelected
-                  ? AppColors.primaryColor.withOpacity(0.15)
-                  : Colors.grey.withOpacity(0.1),
-              spreadRadius: 0.5,
-              blurRadius: isSelected ? 6 : 3,
-              offset: Offset(0, 2.h),
+              color: AppColors.grey.withOpacity(isSelected ? 0.3 : 0.15),
+              spreadRadius: 1,
+              blurRadius: 8,
+              offset: Offset(0, 3.h),
             ),
           ],
         ),
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.all(12.w),
-              child: Row(
+        child: Container(
+          padding: EdgeInsets.all(isTablet ? 24.w : 20.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
                   Container(
-                    width: 40.w,
-                    height: 40.h,
+                    width: isTablet ? 70.w : 60.w,
+                    height: isTablet ? 70.h : 60.h,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10.r),
-                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12.r),
+                      color: AppColors.lightGray,
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10.r),
-                      child: method.logo != null && method.logo!.isNotEmpty
-                          ? Image.network(
-                              method.logo!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, _, __) => Icon(
-                                Icons.payment,
-                                color: AppColors.primaryColor,
-                                size: 20.sp,
-                              ),
-                            )
-                          : Icon(
-                              method.paymentType?.toLowerCase() == 'wallet'
-                                  ? Icons.account_balance_wallet
-                                  : Icons.payment,
-                              color: AppColors.primaryColor,
-                              size: 20.sp,
-                            ),
+                    child: method.logo != null && method.logo!.isNotEmpty
+                        ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12.r),
+                      child: Image.network(
+                        method.logo!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, _, __) => Icon(
+                          Icons.payment,
+                          color: AppColors.primary,
+                          size: isTablet ? 32.sp : 28.sp,
+                        ),
+                      ),
+                    )
+                        : Icon(
+                      method.paymentType?.toLowerCase() == 'wallet'
+                          ? Icons.account_balance_wallet
+                          : Icons.payment,
+                      color: AppColors.primary,
+                      size: isTablet ? 32.sp : 28.sp,
                     ),
                   ),
-                  SizedBox(width: 12.w),
+                  SizedBox(width: 16.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,28 +411,28 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                         Text(
                           method.payment ?? "Unknown Payment",
                           style: TextStyle(
-                            fontSize: 14.sp,
+                            fontSize: isTablet ? 20.sp : 18.sp,
                             fontWeight: FontWeight.bold,
-                            color: isSelected
-                                ? AppColors.primaryColor
-                                : Colors.black87,
+                            color: isSelected ? AppColors.primary : AppColors.darkGray,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         SizedBox(height: 4.h),
                         Container(
                           padding: EdgeInsets.symmetric(
-                            horizontal: 6.w,
-                            vertical: 3.h,
+                            horizontal: 12.w,
+                            vertical: 4.h,
                           ),
                           decoration: BoxDecoration(
                             color: _getPaymentTypeColor(method.paymentType),
-                            borderRadius: BorderRadius.circular(6.r),
+                            borderRadius: BorderRadius.circular(12.r),
                           ),
                           child: Text(
                             _getPaymentTypeText(method.paymentType),
                             style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10.sp,
+                              color: AppColors.white,
+                              fontSize: isTablet ? 14.sp : 12.sp,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -520,180 +441,90 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                     ),
                   ),
                   if (isSelected)
-                    Container(
-                      padding: EdgeInsets.all(3.w),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryColor,
-                        borderRadius: BorderRadius.circular(10.r),
-                      ),
-                      child: Icon(
-                        Icons.check,
-                        color: Colors.white,
-                        size: 14.sp,
-                      ),
-                    )
-                  else
-                    Container(
-                      width: 20.w,
-                      height: 20.h,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade400),
-                        borderRadius: BorderRadius.circular(10.r),
-                      ),
+                    Icon(
+                      Icons.check_circle,
+                      color: AppColors.primary,
+                      size: isTablet ? 28.sp : 24.sp,
                     ),
                 ],
               ),
-            ),
-            if (isSelected &&
-                method.description != null &&
-                method.description!.isNotEmpty)
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 12.h),
-                child: Container(
-                  padding: EdgeInsets.all(10.w),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8.r),
-                    border: Border.all(color: Colors.grey.shade200),
+              if (method.description != null &&
+                  method.description!.isNotEmpty &&
+                  method.id != '10') ...[
+                SizedBox(height: 8.h),
+                InkWell(
+                  onTap: () => _handlePaymentDescription(method.description!),
+                  child: Container(
+                    padding: EdgeInsets.all(isTablet ? 16.w : 12.w),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8.r),
+                      border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _isUrl(method.description!) ? Icons.link : Icons.content_copy,
+                          color: AppColors.primary,
+                          size: isTablet ? 20.sp : 16.sp,
+                        ),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Text(
+                            method.description!,
+                            style: TextStyle(
+                              fontSize: isTablet ? 16.sp : 14.sp,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Icon(
+                          Icons.touch_app,
+                          color: AppColors.primary,
+                          size: isTablet ? 20.sp : 16.sp,
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+              ] else if (method.id == '10') ...[
+                SizedBox(height: 8.h),
+                Container(
+                  padding: EdgeInsets.all(isTablet ? 16.w : 12.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  ),
+                  child: Row(
                     children: [
-                      Text(
-                        'Payment Details:',
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade700,
+                      Icon(
+                        Icons.info_outline,
+                        color: AppColors.primary,
+                        size: isTablet ? 20.sp : 16.sp,
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          'Press "Confirm Purchase" to proceed with the payment link',
+                          style: TextStyle(
+                            fontSize: isTablet ? 16.sp : 14.sp,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        method.description!,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: Colors.grey.shade800,
-                          height: 1.3,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (method.paymentType?.toLowerCase() == 'phone') ...[
-                        SizedBox(height: 6.h),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () async {
-                              await Clipboard.setData(
-                                ClipboardData(text: method.description!),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: const Text(
-                                    'Payment number copied to clipboard',
-                                  ),
-                                  backgroundColor: AppColors.green,
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
-                            icon: Icon(
-                              Icons.copy,
-                              size: 12.sp,
-                              color: AppColors.white,
-                            ),
-                            label: Text(
-                              'Copy Payment Number',
-                              style: TextStyle(
-                                fontSize: 11.sp,
-                                color: AppColors.white,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.blue,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6.r),
-                              ),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 10.w,
-                                vertical: 5.h,
-                              ),
-                              minimumSize: Size(0, 28.h),
-                            ),
-                          ),
-                        ),
-                      ],
-                      if (method.paymentType?.toLowerCase() == 'link' ||
-                          method.paymentType?.toLowerCase() ==
-                              'integration') ...[
-                        SizedBox(height: 6.h),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () async {
-                              final url = method.description!;
-                              final uri = Uri.tryParse(url);
-
-                              if (uri != null) {
-                                final canLaunch = await canLaunchUrl(uri);
-                                if (canLaunch) {
-                                  await launchUrl(
-                                    uri,
-                                    mode: LaunchMode.externalApplication,
-                                  );
-                                } else {
-                                  await launchUrl(
-                                    uri,
-                                    mode: LaunchMode.inAppWebView,
-                                    webViewConfiguration:
-                                        const WebViewConfiguration(
-                                          enableJavaScript: true,
-                                        ),
-                                  );
-                                }
-                              } else {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Invalid URL'),
-                                      backgroundColor: AppColors.red,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            icon: Icon(
-                              Icons.link,
-                              size: 12.sp,
-                              color: AppColors.white,
-                            ),
-                            label: Text(
-                              'Open Payment Link',
-                              style: TextStyle(
-                                fontSize: 11.sp,
-                                color: AppColors.white,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.purple,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6.r),
-                              ),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 10.w,
-                                vertical: 5.h,
-                              ),
-                              minimumSize: Size(0, 28.h),
-                            ),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
-              ),
-          ],
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -702,11 +533,11 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   Widget _buildPaymentProofSection() {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 0.h),
-      padding: EdgeInsets.all(12.w),
+      padding: EdgeInsets.all(isTablet ? 20.w : 10.w),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: AppColors.grey[50],
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppColors.grey[200]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -714,7 +545,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
           Text(
             'Payment Proof',
             style: TextStyle(
-              fontSize: 14.sp,
+              fontSize: isTablet ? 14.sp : 14.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.grey[800],
             ),
@@ -722,101 +553,84 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
           SizedBox(height: 6.h),
           Text(
             'Upload a screenshot or photo of your payment confirmation',
-            style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: isTablet ? 12.sp : 11.sp, color: AppColors.grey[600]),
           ),
           SizedBox(height: 8.h),
           if (imageBytes != null)
             Container(
               width: double.infinity,
-              constraints: BoxConstraints(maxHeight: 100.h),
+              height: isTablet ? 200.h : 100.h,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10.r),
-                border: Border.all(color: AppColors.primaryColor),
+                borderRadius: BorderRadius.circular(12.r),
+                color: Colors.grey[200],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(10.r),
+                borderRadius: BorderRadius.circular(12.r),
                 child: Image.memory(
                   imageBytes!,
-                  fit: BoxFit.contain,
-                  width: double.infinity,
+                  fit: BoxFit.cover,
                 ),
               ),
             )
           else
+
             Container(
               width: double.infinity,
-              height: 40.h,
+              height: isTablet ? 200.h : 30.h,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10.r),
-                color: Colors.grey.shade100,
-                border: Border.all(
-                  color: Colors.grey.shade300,
-                  style: BorderStyle.solid,
-                ),
+                borderRadius: BorderRadius.circular(12.r),
+                color: Colors.grey[200],
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.cloud_upload_outlined,
-                    size: 22.sp,
-                    color: Colors.grey.shade400,
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    'No image selected',
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                ],
+              child: Icon(
+                Icons.image,
+                size: isTablet ? 48.sp : 40.sp,
               ),
             ),
           SizedBox(height: 8.h),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: showImageSourceBottomSheet,
-                  icon: Icon(
-                    Icons.upload_file,
-                    color: AppColors.white,
-                    size: 16.sp,
-                  ),
+                  icon: Icon(Icons.upload_file, color: AppColors.white),
                   label: Text(
-                    'Upload Image',
+                    'Upload Invoice Image',
                     style: TextStyle(
                       color: AppColors.white,
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w600,
+                      fontSize: isTablet ? 16.sp : 14.sp,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
+                    backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.r),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
-                    padding: EdgeInsets.symmetric(vertical: 10.h),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 28.w : 24.w,
+                      vertical: isTablet ? 16.h : 12.h,
+                    ),
                   ),
                 ),
               ),
               if (imageBytes != null) ...[
                 SizedBox(width: 8.w),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6.r),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      imageBytes = null;
+                      base64String = null;
+                    });
+                  },
+                  icon: Icon(
+                    Icons.delete,
+                    color: Colors.red,
+                    size: isTablet ? 28.sp : 24.sp,
                   ),
-                  child: IconButton(
-                    onPressed: () {
-                      setState(() {
-                        imageBytes = null;
-                        base64String = null;
-                      });
-                    },
-                    icon: Icon(Icons.delete, color: Colors.red, size: 18.sp),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.red.withOpacity(0.1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
                   ),
                 ),
               ],
@@ -825,6 +639,78 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
         ],
       ),
     );
+  }
+
+  bool _isUrl(String text) {
+    return Uri.tryParse(text)?.hasScheme ?? false && (text.startsWith('http://') || text.startsWith('https://'));
+  }
+
+  void _handlePaymentDescription(String description) async {
+    if (_isUrl(description)) {
+      try {
+        final uri = Uri.parse(description);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          await launchUrl(
+            uri,
+            mode: LaunchMode.inAppWebView,
+            webViewConfiguration: const WebViewConfiguration(enableJavaScript: true),
+          );
+        }
+      } catch (e) {
+        showTopSnackBar(context, 'Failed to open link', AppColors.red);
+      }
+    } else {
+      try {
+        await Clipboard.setData(ClipboardData(text: description));
+        showTopSnackBar(context, 'Copied to clipboard', AppColors.green);
+      } catch (e) {
+        showTopSnackBar(context, 'Failed to copy', AppColors.red);
+      }
+    }
+  }
+
+  void confirmPurchase() async {
+    if (selectedMethod == null) {
+      showTopSnackBar(
+        context,
+        'Please select a payment method',
+        AppColors.red,
+      );
+      return;
+    }
+
+    String imageData;
+    if (selectedMethod!.id == 'Wallet' || selectedMethod!.id == '10') {
+      imageData = 'wallet';
+    } else {
+      if (base64String == null) {
+        showTopSnackBar(
+          context,
+          'Please upload the invoice image',
+          AppColors.red,
+        );
+        return;
+      }
+      imageData = 'data:image/jpeg;base64,$base64String';
+    }
+
+    try {
+      await buyPackageCubit.buyPackage(
+        packageId: packageId!,
+        paymentMethodId: selectedMethod!.id!,
+        userId: SelectedStudent.studentId,
+        image: imageData,
+      );
+    } catch (e) {
+      developer.log('Error in purchase: $e');
+      showTopSnackBar(
+        context,
+        'Something went wrong, please try again: $e',
+        AppColors.red,
+      );
+    }
   }
 
   @override
@@ -837,21 +723,23 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       child: BlocListener<BuyPackageCubit, BuyPackageState>(
         listener: (context, state) {
           if (state is BuyPackageSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Package "$packageName" purchased successfully!'),
-                backgroundColor: AppColors.green,
-              ),
+            showTopSnackBar(
+              context,
+              'Package "$packageName" purchased successfully!',
+              AppColors.green,
             );
             Navigator.pop(context);
           } else if (state is BuyPackageError) {
-           print(state.message);
-            showTopSnackBar(context," Please select a valid method or check your wallet balance", AppColors.primaryColor);
+            showTopSnackBar(
+              context,
+              'Please select a valid method or check your wallet balance',
+              AppColors.red,
+            );
           }
         },
         child: Scaffold(
-          backgroundColor: Colors.grey.shade50,
-          appBar: CustomAppBar(title: "Payment Methods"),
+          backgroundColor: AppColors.lightGray,
+          appBar: CustomAppBar(title: "Select Payment Method"),
           body: BlocBuilder<PaymentMethodsCubit, PaymentMethodsStates>(
             bloc: paymentMethodsCubit,
             builder: (context, state) {
@@ -860,13 +748,24 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      CircularProgressIndicator(color: AppColors.primaryColor),
-                      SizedBox(height: 12.h),
+                      Container(
+                        padding: EdgeInsets.all(isTablet ? 24.r : 20.r),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                          strokeWidth: 3.w,
+                        ),
+                      ),
+                      SizedBox(height: 24.h),
                       Text(
                         'Loading payment methods...',
                         style: TextStyle(
-                          fontSize: 14.sp,
-                          color: Colors.grey.shade600,
+                          fontSize: isTablet ? 18.sp : 16.sp,
+                          color: AppColors.grey[600],
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -875,127 +774,154 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
               } else if (state is PaymentMethodsSuccessState) {
                 final methods = [
                   _walletPaymentMethod,
+                  PaymentMethodEntity(
+                    id: '10',
+                    payment: 'Visacard/ Mastercard',
+                    paymentType: 'integration',
+                    description: 'Pay using Paymob',
+                    logo: 'https://cdn.paymob.com/images/logos/paymob-logo.png',
+                  ),
                   ...?state.paymentMethodsResponse.paymentMethods,
                 ];
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    return Column(
-                      children: [
-                        _buildCompactPackageInfoCard(),
-                        Expanded(
-                          child: RefreshIndicator(
-                            color: AppColors.primary,
-                            onRefresh: () async {
-                              paymentMethodsCubit.getPaymentMethods(
-                                userId: SelectedStudent.studentId,
-                              );
-                            },
-                            child: ListView.builder(
-                              padding: EdgeInsets.all(12.w),
-                              itemCount: methods.length,
-                              itemBuilder: (context, index) =>
-                                  _buildPaymentMethodCard(methods[index]),
-                            ),
-                          ),
-                        ),
-                        if (selectedMethod != null) ...[
-                          if (selectedMethod?.id != 'Wallet')
-                            _buildPaymentProofSection(),
-                          Container(
-                            padding: EdgeInsets.all(12.w),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  spreadRadius: 1,
-                                  blurRadius: 4,
-                                  offset: Offset(0, -2.h),
-                                ),
-                              ],
-                            ),
-                            child: CustomElevatedButton(
-                              backgroundColor:
-                                  (selectedMethod != null &&
-                                      (selectedMethod!.id == 'Wallet' ||
-                                          base64String != null))
-                                  ? AppColors.primaryColor
-                                  : Colors.grey.shade400,
-                              textStyle: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              text: "Confirm Purchase",
-                              onPressed:
-                                  confirmPurchase
-
-                            ),
-                          ),
-                        ],
-                      ],
-                    );
-                  },
-                );
-              } else {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 48.sp,
-                        color: Colors.red.shade400,
-                      ),
-                      SizedBox(height: 12.h),
-                      Text(
-                        'Failed to load payment methods',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      SizedBox(height: 6.h),
-                      Text(
-                        'Please check your connection and try again',
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-                      SizedBox(height: 16.h),
-                      ElevatedButton.icon(
-                        onPressed: () {
+                return Column(
+                  children: [
+                    _buildCompactPackageInfoCard(),
+                    Expanded(
+                      child: RefreshIndicator(
+                        color: AppColors.primary,
+                        onRefresh: () async {
                           paymentMethodsCubit.getPaymentMethods(
                             userId: SelectedStudent.studentId,
                           );
                         },
-                        icon: Icon(
-                          Icons.refresh,
-                          color: Colors.white,
-                          size: 16.sp,
+                        child: ListView.builder(
+                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                          itemCount: methods.length,
+                          itemBuilder: (context, index) =>
+                              _buildPaymentMethodCard(methods[index]),
                         ),
-                        label: Text(
-                          'Retry',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      ),
+                    ),
+                    if (selectedMethod != null) ...[
+                      if (selectedMethod?.id != 'Wallet' && selectedMethod?.id != '10')
+                        _buildPaymentProofSection(),
+                      Container(
+                        padding: EdgeInsets.all(isTablet ? 24.w : 16.w),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.grey.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, -2),
+                            ),
+                          ],
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10.r),
+                        child: ElevatedButton(
+                          onPressed: (selectedMethod != null &&
+                              (selectedMethod!.id == 'Wallet' ||
+                                  selectedMethod!.id == '10' ||
+                                  base64String != null))
+                              ? confirmPurchase
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: isTablet ? 20.h : 0.h),
+                            minimumSize: Size(double.infinity, isTablet ? 56.h : 35.h),
                           ),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 20.w,
-                            vertical: 10.h,
+                          child: Text(
+                            'Confirm Purchase',
+                            style: TextStyle(
+                              color: AppColors.white,
+                              fontSize: isTablet ? 18.sp : 16.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
                     ],
+                  ],
+                );
+              } else {
+                return Center(
+                  child: Container(
+                    margin: EdgeInsets.all(isTablet ? 40.r : 32.r),
+                    padding: EdgeInsets.all(isTablet ? 32.r : 24.r),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(16.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.black.withOpacity(0.1),
+                          blurRadius: 10.r,
+                          offset: Offset(0, 4.h),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(16.r),
+                          decoration: BoxDecoration(
+                            color: AppColors.red.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.error_outline,
+                            size: isTablet ? 56.r : 48.r,
+                            color: AppColors.red,
+                          ),
+                        ),
+                        SizedBox(height: 16.h),
+                        Text(
+                          'Failed to load payment methods',
+                          style: TextStyle(
+                            fontSize: isTablet ? 20.sp : 18.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.grey[800],
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        Text(
+                          'Please check your connection and try again',
+                          style: TextStyle(
+                            fontSize: isTablet ? 16.sp : 14.sp,
+                            color: AppColors.grey[600],
+                          ),
+                        ),
+                        SizedBox(height: 24.h),
+                        ElevatedButton(
+                          onPressed: () {
+                            paymentMethodsCubit.getPaymentMethods(
+                              userId: SelectedStudent.studentId,
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.white,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 32.w,
+                              vertical: 12.h,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                            elevation: 2,
+                          ),
+                          child: Text(
+                            'Try Again',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: isTablet ? 16.sp : 14.sp,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }

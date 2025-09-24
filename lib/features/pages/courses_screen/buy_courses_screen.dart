@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -1274,11 +1275,11 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                                     ];
                                     return Column(
                                       children: methods.map((method) {
-                                        final isSelected = selectedPaymentMethodId == method.id;
+                                        final isSelected = selectedPaymentMethodId == method.id.toString();
                                         return GestureDetector(
                                           onTap: () {
                                             setModalState(() {
-                                              selectedPaymentMethodId = method.id;
+                                              selectedPaymentMethodId = method.id.toString(); // Fixed: Convert to String
                                             });
                                           },
                                           child: Container(
@@ -1393,7 +1394,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                                                   ),
                                                   if (method.description != null &&
                                                       method.description!.isNotEmpty &&
-                                                      method.id != '10') ...[
+                                                      method.id.toString() != '10') ...[
                                                     SizedBox(height: 12.h),
                                                     InkWell(
                                                       onTap: () => _handlePaymentDescription(method.description!),
@@ -1433,7 +1434,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                                                         ),
                                                       ),
                                                     ),
-                                                  ] else if (method.id == '10') ...[
+                                                  ] else if (method.id.toString() == '10') ...[
                                                     SizedBox(height: 12.h),
                                                     Container(
                                                       padding: EdgeInsets.all(isTablet ? 16.w : 12.w),
@@ -1529,7 +1530,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                                 if (chapter == null) {
                                   await buyCourseCubit.buyPackage(
                                     courseId: "${course.id ?? 0}",
-                                    paymentMethodId: selectedPaymentMethodId!,
+                                    paymentMethodId: selectedPaymentMethodId!, // Now it's String
                                     amount: finalPrice.toStringAsFixed(2),
                                     userId: "${SelectedStudent.studentId}",
                                     duration: "${course.allPrices?.isNotEmpty == true ? course.allPrices!.first.duration ?? 30 : 30}",
@@ -1539,7 +1540,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                                 } else {
                                   await chapterDataCubit.buyChapter(
                                     courseId: "${course.id ?? 0}",
-                                    paymentMethodId: selectedPaymentMethodId!,
+                                    paymentMethodId: selectedPaymentMethodId!, // Now it's String
                                     amount: finalPrice.toStringAsFixed(2),
                                     userId: "${SelectedStudent.studentId}",
                                     chapterId: "${chapter.id ?? 0}",
@@ -1810,13 +1811,6 @@ class _ChapterPaymentWebViewScreenState extends State<ChapterPaymentWebViewScree
             });
             _handlePaymentResult(url);
           },
-          // onWebResourceError: (WebResourceError error) {
-          //   developer.log('Chapter WebView Error: ${error.description}');
-          //   setState(() {
-          //     _isLoading = false;
-          //     _hasError = true;
-          //   });
-          // },
           onNavigationRequest: (request) {
             developer.log('Chapter Navigation Request: ${request.url}');
             return NavigationDecision.navigate;
@@ -1857,16 +1851,16 @@ class _ChapterPaymentWebViewScreenState extends State<ChapterPaymentWebViewScree
       appBar: AppBar(
         centerTitle: true,
         title: const Text(
-          'Chapter Payment', // Changed to reflect course-like naming
+          'Chapter Payment',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 20, // Adjusted for a more "course-like" bold title
+            fontSize: 20,
           ),
         ),
-        foregroundColor: AppColors.primary, // Consistent with course style
-        elevation: 0, // Flat design for modern course UI
+        foregroundColor: AppColors.primary,
+        elevation: 0,
         leading: IconButton(
-          icon:  Icon(Icons.arrow_back_ios, color: AppColors.primary), // Changed to arrow for course style
+          icon: Icon(Icons.arrow_back_ios, color: AppColors.primary),
           onPressed: () {
             Navigator.pop(context);
             widget.onPaymentResult(false, 'Payment cancelled by user');
@@ -1881,57 +1875,9 @@ class _ChapterPaymentWebViewScreenState extends State<ChapterPaymentWebViewScree
               Center(
                 child: CircularProgressIndicator(
                   color: AppColors.primary,
-                  strokeWidth: 6, // Thicker for course-like emphasis
+                  strokeWidth: 6,
                 ),
               ),
-            // if (_hasError)
-            //   Center(
-            //     child: Column(
-            //       mainAxisAlignment: MainAxisAlignment.center,
-            //       crossAxisAlignment: CrossAxisAlignment.center,
-            //       children: [
-            //         Icon(
-            //           Icons.error_outline,
-            //           size: isTablet ? 80 : 60, // Larger icon for course style
-            //           color: AppColors.red,
-            //         ),
-            //         SizedBox(height: 20), // Adjusted spacing
-            //         Text(
-            //           'Failed to Load Payment',
-            //           style: TextStyle(
-            //             fontSize: isTablet ? 20 : 18, // Larger font for course
-            //             fontWeight: FontWeight.w600, // Bolder for emphasis
-            //             color: AppColors.red,
-            //           ),
-            //         ),
-            //         SizedBox(height: 20),
-            //         ElevatedButton(
-            //           style: ElevatedButton.styleFrom(
-            //             backgroundColor: AppColors.primary, // Course-like button color
-            //             foregroundColor: Colors.white, // White text
-            //             padding: EdgeInsets.symmetric(
-            //               horizontal: 32,
-            //               vertical: 12,
-            //             ), // Larger button
-            //             shape: RoundedRectangleBorder(
-            //               borderRadius: BorderRadius.circular(12), // Rounded for course style
-            //             ),
-            //           ),
-            //           onPressed: () {
-            //             setState(() {
-            //               _hasError = false;
-            //               _isLoading = true;
-            //             });
-            //             _controller.loadRequest(Uri.parse(widget.paymentLink));
-            //           },
-            //           child: const Text(
-            //             'Try Again',
-            //             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            //           ),
-            //         ),
-            //       ],
-            //     ),
-            //   ),
           ],
         ),
       ),
@@ -1987,7 +1933,6 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
               _isLoading = false;
               _hasError = true;
             });
-
           },
           onNavigationRequest: (request) {
             developer.log('Navigation Request: ${request.url}');
@@ -2025,10 +1970,9 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
         title: const Text('Complete Payment'),
         foregroundColor: AppColors.primary,
         leading: IconButton(
-          icon:  Icon(Icons.arrow_back_ios),
+          icon: Icon(Icons.arrow_back_ios),
           onPressed: () {
             Navigator.of(context).pop();
-            // widget.buyCourseCubit.handlePaymentResult('cancelled');
           },
         ),
       ),
@@ -2040,38 +1984,6 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
               Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
-            // if (_hasError)
-            //   Center(
-            //     child: Column(
-            //       mainAxisAlignment: MainAxisAlignment.center,
-            //       children: [
-            //         Icon(
-            //           Icons.error_outline,
-            //           size: isTablet ? 64.sp : 48.sp,
-            //           color: AppColors.red,
-            //         ),
-            //         SizedBox(height: 16.h),
-            //         Text(
-            //           'Failed to load payment page',
-            //           style: TextStyle(
-            //             fontSize: isTablet ? 18.sp : 16.sp,
-            //             color: AppColors.red,
-            //           ),
-            //         ),
-            //         SizedBox(height: 16.h),
-            //         ElevatedButton(
-            //           onPressed: () {
-            //             setState(() {
-            //               _hasError = false;
-            //               _isLoading = true;
-            //             });
-            //             _controller.loadRequest(Uri.parse(widget.paymentLink));
-            //           },
-            //           child: const Text('Retry'),
-            //         ),
-            //       ],
-            //     ),
-            //   ),
           ],
         ),
       ),

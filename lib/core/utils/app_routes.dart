@@ -28,6 +28,7 @@ class AppRoutes {
   static const String splashScreen = '/splashScreen';
   static const String paymentsScreen = '/paymentsScreen';
   static const String selectScreen = '/selectScreen';
+  static const String coursesPaymentScreen = '/coursePaymentScreen';
 
   static void goToHome(BuildContext context) {
     if (SelectedStudent.studentId == null) {
