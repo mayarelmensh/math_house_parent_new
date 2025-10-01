@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:math_house_parent_new/core/api/end_points.dart';
 import 'package:math_house_parent_new/features/pages/payment_history/cubit/payment_history_states.dart';
-
 import '../../../../core/api/api_manager.dart';
 import '../../../../core/cache/shared_preferences_utils.dart';
 import '../../../../data/models/payment_history_response_dm.dart';
@@ -25,19 +24,25 @@ class PaymentHistoryCubit extends Cubit<PaymentState> {
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
-            // 'Content-Type': 'application/json',
-            // 'Accept': 'application/json',
           },
         ),
       );
 
       if (response.statusCode == 200 && response.data != null) {
         final paymentResponse = PaymentResponse.fromJson(response.data);
-        // Store all payments in allPayments for filtering
+        // Compute available payment methods
+        final methods = paymentResponse.payments
+            .map((p) => p.paymentMethod.toLowerCase())
+            .toSet()
+            .toList();
+        if (!methods.contains('all')) {
+          methods.insert(0, 'all');
+        }
         emit(
           PaymentSuccess(
             payments: paymentResponse.payments,
             allPayments: paymentResponse.payments,
+            availablePaymentMethods: methods,
           ),
         );
       } else {
@@ -76,6 +81,7 @@ class PaymentHistoryCubit extends Cubit<PaymentState> {
         PaymentSuccess(
           payments: filteredPayments,
           allPayments: currentState.allPayments ?? currentState.payments,
+          availablePaymentMethods: currentState.availablePaymentMethods,
         ),
       );
     }

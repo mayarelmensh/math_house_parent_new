@@ -17,32 +17,50 @@ class GetStudentsUseCase {
 
     return result.map((students) {
       if (query == null || query.isEmpty) {
-        return students;
+        return students.map((dm) => StudentsEntity(
+          id: dm.id,
+          email: dm.email,
+          phone: dm.phone,
+          nickName: dm.nickName,
+          imageLink: dm.imageLink,
+        )).toList();
       }
       final q = query.toLowerCase();
-      return students.where((s) {
+      return students
+          .where((s) {
         return s.nickName?.toLowerCase().contains(q) == true ||
             s.email?.toLowerCase().contains(q) == true;
-      }).toList();
+      })
+          .map((dm) => StudentsEntity(
+        id: dm.id,
+        email: dm.email,
+        phone: dm.phone,
+        nickName: dm.nickName,
+        imageLink: dm.imageLink,
+      ))
+          .toList();
     });
   }
 
-  Future<Either<Failures, List<StudentsEntity>>> getMyStudents() async {
-    return await repository.getMyStudents();
+  Future<Either<Failures, List<MyStudentsEntity>>> getMyStudents() async {
+    final result = await repository.getMyStudents();
+
+    return result.map((myStudents) {
+      return myStudents.map((dm) => MyStudentsEntity(
+        id: dm.id,
+        email: dm.email,
+        phone: dm.phone,
+        nickName: dm.nickName,
+        imageLink: dm.imageLink,
+        categoryId: dm.categoryId,
+        category: dm.category != null
+            ? CategoryEntity(
+          id: dm.category!.id,
+          cateName: dm.category!.cateName,
+          imageLink: dm.category!.imageLink,
+        )
+            : null,
+      )).toList();
+    });
   }
 }
-//   Future<Either<Failures, List<StudentsEntity>>> getMyStudents([String? query]) async {
-//     final result = await repository.getMyStudents();
-//
-//     return result.map((students) {
-//       if (query == null || query.isEmpty) {
-//         return students;
-//       }
-//       final q = query.toLowerCase();
-//       return students.where((s) {
-//         return s.nickName?.toLowerCase().contains(q) == true ||
-//             s.email?.toLowerCase().contains(q) == true;
-//       }).toList();
-//     });
-//   }
-// }

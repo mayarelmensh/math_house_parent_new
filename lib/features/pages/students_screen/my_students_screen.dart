@@ -61,7 +61,7 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                  Container(
+                    Container(
                       padding: EdgeInsets.all(16.r),
                       decoration: BoxDecoration(
                         color: AppColors.red.withOpacity(0.1),
@@ -227,7 +227,7 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
                       ),
                     ),
                     subtitle: Text(
-                      student.email ?? "",
+                      '${student.email ?? ""}${student.category?.cateName != null ? " \n ${student.category!.cateName}" : ""}',
                       style: TextStyle(
                         fontSize: 14.sp,
                         color: AppColors.grey[600],
@@ -241,7 +241,11 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
                         key: 'studentId',
                         value: student.id!,
                       );
-                      debugPrint("✅ Selected Student ID: ${student.id}");
+                      SharedPreferenceUtils.saveData(
+                        key: 'studentCategory',
+                        value: student.category?.cateName ?? '',
+                      );
+                      debugPrint("✅ Selected Student ID: ${student.id}, Category: ${student.category?.cateName}");
                       AppRoutes.goToHome(context);
                     },
                   ),

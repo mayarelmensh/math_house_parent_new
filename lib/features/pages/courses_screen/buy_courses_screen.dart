@@ -45,11 +45,11 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
   late Animation<double> _fadeAnimation;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  int? _selectedCategoryId;
   String? base64String;
   Uint8List? imageBytes;
   ChapterDataCubit chapterDataCubit = getIt<ChapterDataCubit>();
   BuyCourseCubit buyCourseCubit = getIt<BuyCourseCubit>();
+  final List<int> _selectedChapterIds = [];
 
   bool get isTablet => MediaQuery.of(context).size.width > 600;
   bool get isDesktop => MediaQuery.of(context).size.width > 1024;
@@ -66,7 +66,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CoursesCubit>().getCoursesList();
+      context.read<CoursesCubit>().getCoursesList(SelectedStudent.studentId);
       _animationController.forward();
     });
   }
@@ -92,20 +92,16 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
           } else if (state is CoursesErrorState) {
             return _buildErrorState(state.error.errorMsg);
           } else if (state is CoursesSuccessState) {
-            final allCourses = _getAllCourses(state.coursesResponseEntity);
+            final allCourses = state.coursesResponseEntity.courses ?? [];
             if (allCourses.isEmpty) return _buildEmptyState();
 
-            final filteredCourses = _filterCourses(
-              allCourses,
-              state.coursesResponseEntity.categories ?? [],
-            );
+            final filteredCourses = _filterCourses(allCourses);
 
             return FadeTransition(
               opacity: _fadeAnimation,
               child: Column(
                 children: [
                   _buildSearchBar(),
-                  _buildCategoryFilter(state.coursesResponseEntity.categories ?? []),
                   _buildCoursesHeader(filteredCourses.length),
                   Expanded(child: _buildCoursesList(filteredCourses)),
                 ],
@@ -158,55 +154,6 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
     );
   }
 
-  Widget _buildCategoryFilter(List<CategoriesEntity> categories) {
-    if (categories.isEmpty) return const SizedBox.shrink();
-    return Container(
-      height: 40.h,
-      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          _buildCategoryChip(null, 'All'),
-          ...categories.map(
-                (category) => _buildCategoryChip(
-              category.id,
-              category.categoryName ?? 'Category',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryChip(int? categoryId, String label) {
-    final isSelected = _selectedCategoryId == categoryId;
-    return Padding(
-      padding: EdgeInsets.only(right: 8.w),
-      child: ChoiceChip(
-        label: Text(
-          label,
-          style: TextStyle(
-            fontSize: isTablet ? 16.sp : 14.sp,
-            color: isSelected ? AppColors.white : AppColors.grey[700],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        selected: isSelected,
-        selectedColor: AppColors.primary,
-        backgroundColor: AppColors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.r),
-          side: BorderSide(color: AppColors.grey[300]!),
-        ),
-        onSelected: (selected) {
-          setState(() {
-            _selectedCategoryId = selected ? categoryId : null;
-          });
-        },
-      ),
-    );
-  }
-
   Widget _buildCoursesHeader(int courseCount) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
@@ -243,7 +190,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
 
   Widget _buildCoursesList(List<CourseEntity> courses) {
     return RefreshIndicator(
-      onRefresh: () async => context.read<CoursesCubit>().getCoursesList(),
+      onRefresh: () async => context.read<CoursesCubit>().getCoursesList(SelectedStudent.studentId),
       color: AppColors.primary,
       child: ListView.builder(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
@@ -365,7 +312,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
             ),
             SizedBox(height: 24.h),
             ElevatedButton(
-              onPressed: () => context.read<CoursesCubit>().getCoursesList(),
+              onPressed: () => context.read<CoursesCubit>().getCoursesList(SelectedStudent.studentId),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.white,
@@ -443,41 +390,15 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
     );
   }
 
-  List<CourseEntity> _filterCourses(List<CourseEntity> courses, List<CategoriesEntity> categories) {
-    List<CourseEntity> filteredCourses = courses.where((course) {
+  List<CourseEntity> _filterCourses(List<CourseEntity> courses) {
+    return courses.where((course) {
       return (course.courseName?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
           (course.courseDescription?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
     }).toList();
-
-    if (_selectedCategoryId != null) {
-      final selectedCategory = categories.firstWhere(
-            (category) => category.id == _selectedCategoryId,
-        orElse: () => CategoriesEntity(),
-      );
-      if (selectedCategory.course != null && selectedCategory.course!.isNotEmpty) {
-        filteredCourses = filteredCourses.where((course) {
-          return selectedCategory.course!.any((c) => c.id == course.id);
-        }).toList();
-      } else {
-        filteredCourses = [];
-      }
-    }
-    return filteredCourses;
-  }
-
-  List<CourseEntity> _getAllCourses(CoursesResponseEntity coursesResponse) {
-    List<CourseEntity> allCourses = [];
-    if (coursesResponse.categories != null && coursesResponse.categories!.isNotEmpty) {
-      for (var category in coursesResponse.categories!) {
-        if (category.course != null && category.course!.isNotEmpty) {
-          allCourses.addAll(category.course!);
-        }
-      }
-    }
-    return allCourses;
   }
 
   void _navigateToCourseDetails(CourseEntity course) {
+    _selectedChapterIds.clear();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -509,177 +430,216 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                     topRight: Radius.circular(20.r),
                   ),
                 ),
-                child: ListView(
-                  controller: scrollController,
-                  padding: EdgeInsets.all(isTablet ? 24.w : 16.w),
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40.w,
-                        height: 4.h,
-                        margin: EdgeInsets.only(bottom: 16.h),
-                        decoration: BoxDecoration(
-                          color: AppColors.grey[300],
-                          borderRadius: BorderRadius.circular(2.r),
-                        ),
-                      ),
-                    ),
-                    if (course.courseImage != null && course.courseImage!.isNotEmpty)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12.r),
-                        child: Image.network(
-                          course.courseImage!,
-                          height: isTablet ? 250.h : 200.h,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            height: isTablet ? 250.h : 200.h,
-                            color: AppColors.grey[200],
-                            child: Icon(Icons.error, color: AppColors.red),
+                child: StatefulBuilder(
+                  builder: (context, setModalState) {
+                    return ListView(
+                      controller: scrollController,
+                      padding: EdgeInsets.all(isTablet ? 24.w : 16.w),
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 40.w,
+                            height: 4.h,
+                            margin: EdgeInsets.only(bottom: 16.h),
+                            decoration: BoxDecoration(
+                              color: AppColors.grey[300],
+                              borderRadius: BorderRadius.circular(2.r),
+                            ),
                           ),
                         ),
-                      ),
-                    SizedBox(height: 16.h),
-                    Text(
-                      course.courseName ?? "Course Name",
-                      style: TextStyle(
-                        fontSize: isTablet ? 24.sp : 22.sp,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: 8.h),
-                    if (course.courseDescription != null && course.courseDescription!.isNotEmpty)
-                      Text(
-                        course.courseDescription!,
-                        style: TextStyle(
-                          fontSize: isTablet ? 18.sp : 16.sp,
-                          height: 1.5,
-                          color: AppColors.gray,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    SizedBox(height: 20.h),
-                    if (course.chapters != null && course.chapters!.isNotEmpty) ...[
-                      Text(
-                        "Course Chapters",
-                        style: TextStyle(
-                          fontSize: isTablet ? 18.sp : 16.sp,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      SizedBox(height: 12.h),
-                      ...course.chapters!.map(
-                            (chapter) => Card(
-                          margin: EdgeInsets.only(bottom: 8.h),
-                          color: AppColors.white,
-                          child: ExpansionTile(
-                            title: Text(
-                              chapter.chapterName ?? "Chapter",
-                              style: TextStyle(color: AppColors.primary),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                        if (course.courseImage != null && course.courseImage!.isNotEmpty)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12.r),
+                            child: Image.network(
+                              course.courseImage!,
+                              height: isTablet ? 250.h : 200.h,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                height: isTablet ? 250.h : 200.h,
+                                color: AppColors.grey[200],
+                                child: Icon(Icons.error, color: AppColors.red),
+                              ),
                             ),
-                            subtitle: chapter.chapterPrice != null
-                                ? Text(
-                              "Price: ${chapter.chapterPrice} EGP",
-                              style: TextStyle(color: AppColors.green),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            )
-                                : null,
-                            trailing: chapter.chapterPrice != null
-                                ? ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primaryLight,
-                              ),
-                              onPressed: () {
-                                _showPaymentMethodsBottomSheet(
-                                  course: course,
-                                  chapter: chapter,
-                                );
-                              },
-                              child: Text(
-                                "Buy",
-                                style: TextStyle(
-                                  color: AppColors.primary,
+                          ),
+                        SizedBox(height: 16.h),
+                        Text(
+                          course.courseName ?? "Course Name",
+                          style: TextStyle(
+                            fontSize: isTablet ? 24.sp : 22.sp,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 8.h),
+                        if (course.courseDescription != null && course.courseDescription!.isNotEmpty)
+                          Text(
+                            course.courseDescription!,
+                            style: TextStyle(
+                              fontSize: isTablet ? 18.sp : 16.sp,
+                              height: 1.5,
+                              color: AppColors.gray,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        SizedBox(height: 20.h),
+                        if (course.chapters != null && course.chapters!.isNotEmpty) ...[
+                          Text(
+                            "Course Chapters",
+                            style: TextStyle(
+                              fontSize: isTablet ? 18.sp : 16.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          SizedBox(height: 12.h),
+                          ...course.chapters!.map(
+                                (chapter) => Card(
+                              margin: EdgeInsets.only(bottom: 8.h),
+                              color: AppColors.white,
+                              child: ExpansionTile(
+                                title: Text(
+                                  chapter.chapterName ?? "Chapter",
+                                  style: TextStyle(color: AppColors.primary),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                            )
-                                : null,
-                            children: [
-                              if (chapter.lessons != null && chapter.lessons!.isNotEmpty)
-                                ...chapter.lessons!.map(
-                                      (lesson) => ListTile(
-                                    leading: Icon(
-                                      Icons.play_circle_outline,
+                                subtitle: chapter.chapterPrice != null
+                                    ? Text(
+                                  "Price: ${chapter.chapterPrice} \$",
+                                  style: TextStyle(color: AppColors.green),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                )
+                                    : null,
+                                leading: chapter.chapterPrice != null
+                                    ? Checkbox(
+                                  value: _selectedChapterIds.contains(chapter.id),
+                                  onChanged: (value) {
+                                    setModalState(() {
+                                      if (value == true) {
+                                        _selectedChapterIds.add(chapter.id!);
+                                      } else {
+                                        _selectedChapterIds.remove(chapter.id);
+                                      }
+                                    });
+                                  },
+                                  activeColor: AppColors.primary,
+                                )
+                                    : null,
+                                trailing: chapter.chapterPrice != null
+                                    ? ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primaryLight,
+                                  ),
+                                  onPressed: () {
+                                    _selectedChapterIds.clear();
+                                    _selectedChapterIds.add(chapter.id!);
+                                    _showPaymentMethodsBottomSheet(
+                                      course: course,
+                                      chapters: [chapter],
+                                    );
+                                  },
+                                  child: Text(
+                                    "Buy",
+                                    style: TextStyle(
                                       color: AppColors.primary,
                                     ),
-                                    title: Text(
-                                      lesson.lessonName ?? "Lesson",
-                                      style: TextStyle(
-                                        color: AppColors.darkGrey,
+                                  ),
+                                )
+                                    : null,
+                                children: [
+                                  if (chapter.lessons != null && chapter.lessons!.isNotEmpty)
+                                    ...chapter.lessons!.map(
+                                          (lesson) => ListTile(
+                                        leading: Icon(
+                                          Icons.play_circle_outline,
+                                          color: AppColors.primary,
+                                        ),
+                                        title: Text(
+                                          lesson.lessonName ?? "Lesson",
+                                          style: TextStyle(
+                                            color: AppColors.darkGrey,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (_selectedChapterIds.isNotEmpty)
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12.h),
+                              child: CustomElevatedButton(
+                                text: 'Buy Selected Chapters (${_selectedChapterIds.length})',
+                                onPressed: () {
+                                  final selectedChapters = course.chapters!
+                                      .where((chapter) => _selectedChapterIds.contains(chapter.id))
+                                      .toList();
+                                  _showPaymentMethodsBottomSheet(
+                                    course: course,
+                                    chapters: selectedChapters,
+                                  );
+                                },
+                                backgroundColor: AppColors.primaryColor,
+                                textStyle: TextStyle(color: AppColors.white),
+                              ),
+                            ),
+                        ],
+                        SizedBox(height: 20.h),
+                        if (course.price != null)
+                          Container(
+                            padding: EdgeInsets.all(isTablet ? 24.w : 16.w),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.green.withOpacity(0.1),
+                                  AppColors.green.withOpacity(0.05),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12.r),
+                              border: Border.all(color: AppColors.green),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  "Course Price",
+                                  style: TextStyle(
+                                    fontSize: isTablet ? 18.sp : 16.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.gray,
                                   ),
                                 ),
-                            ],
+                                SizedBox(height: 8.h),
+                                Text(
+                                  "${course.price} \$",
+                                  style: TextStyle(
+                                    fontSize: isTablet ? 26.sp : 24.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.green,
+                                  ),
+                                ),
+                                SizedBox(height: 8.h),
+                                CustomElevatedButton(
+                                  text: 'Buy Course',
+                                  onPressed: () => _showPaymentMethodsBottomSheet(course: course),
+                                  backgroundColor: AppColors.primaryColor,
+                                  textStyle: TextStyle(color: AppColors.white),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
-                    SizedBox(height: 20.h),
-                    if (course.price != null)
-                      Container(
-                        padding: EdgeInsets.all(isTablet ? 24.w : 16.w),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.green.withOpacity(0.1),
-                              AppColors.green.withOpacity(0.05),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(12.r),
-                          border: Border.all(color: AppColors.green),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              "Course Price",
-                              style: TextStyle(
-                                fontSize: isTablet ? 18.sp : 16.sp,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.gray,
-                              ),
-                            ),
-                            SizedBox(height: 8.h),
-                            Text(
-                              "${course.price} EGP",
-                              style: TextStyle(
-                                fontSize: isTablet ? 26.sp : 24.sp,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.green,
-                              ),
-                            ),
-                            SizedBox(height: 8.h),
-                            CustomElevatedButton(
-                              text: 'Buy Course',
-                              onPressed: () => _showPaymentMethodsBottomSheet(course: course),
-                              backgroundColor: AppColors.primaryColor,
-                              textStyle: TextStyle(color: AppColors.white),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
               ),
             );
@@ -691,7 +651,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
 
   void _showPaymentMethodsBottomSheet({
     required CourseEntity course,
-    ChaptersEntity? chapter,
+    List<ChaptersEntity>? chapters,
   }) {
     final paymentMethodsCubit = getIt<PaymentMethodsCubit>();
     final buyCourseCubit = getIt<BuyCourseCubit>();
@@ -717,9 +677,12 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
       isDismissible: true,
       builder: (context) => StatefulBuilder(
         builder: (BuildContext context, StateSetter setModalState) {
-          double originalPrice = chapter == null
+          double originalPrice = chapters == null
               ? (course.price?.toDouble() ?? 0.0)
-              : (chapter.chapterPrice?.toDouble() ?? 0.0);
+              : chapters.fold(
+            0.0,
+                (sum, chapter) => sum + (chapter.chapterPrice?.toDouble() ?? 0.0),
+          );
 
           double finalPrice = newPrice ?? originalPrice;
 
@@ -753,7 +716,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                         } else if (state is BuyCourseSuccessState) {
                           showTopSnackBar(
                             context,
-                            'Course purchased successfully!',
+                            'Course purchase is pending!',
                             AppColors.green,
                           );
                           Navigator.pop(context);
@@ -779,7 +742,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                                     if (isSuccess) {
                                       showTopSnackBar(
                                         context,
-                                        'Chapter purchased successfully!',
+                                        'Chapter${chapters!.length > 1 ? 's' : ''} purchased successfully!',
                                         AppColors.green,
                                       );
                                       Navigator.pop(context);
@@ -797,7 +760,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                           } else {
                             showTopSnackBar(
                               context,
-                              'Chapter purchased successfully!',
+                              'Chapter${chapters!.length > 1 ? 's' : ''} purchase is pending!',
                               AppColors.green,
                             );
                             Navigator.pop(context);
@@ -868,9 +831,9 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                             padding: EdgeInsets.symmetric(horizontal: isTablet ? 24.w : 16.w),
                             children: [
                               Text(
-                                chapter == null
+                                chapters == null
                                     ? 'Course: ${course.courseName ?? 'Unknown'}'
-                                    : 'Chapter: ${chapter.chapterName ?? 'Unknown'}',
+                                    : 'Chapter${chapters.length > 1 ? 's' : ''}: ${chapters.length > 1 ? '${chapters.length} Chapters' : chapters.first.chapterName ?? 'Unknown'}',
                                 style: TextStyle(
                                   fontSize: isTablet ? 18.sp : 16.sp,
                                   fontWeight: FontWeight.bold,
@@ -880,7 +843,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                                 overflow: TextOverflow.ellipsis,
                               ),
                               SizedBox(height: 12.h),
-                              if (chapter == null) ...[
+                              if (chapters == null) ...[
                                 BlocBuilder<PromoCodeCubit, PromoCodeStates>(
                                   builder: (context, promoState) {
                                     return Container(
@@ -1052,7 +1015,8 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                                                           SizedBox(width: 8.w),
                                                           Expanded(
                                                             child: Text(
-                                                              'Promo code applied! You save ${(originalPrice - newPrice!).toStringAsFixed(0)} EGP',
+                                                              'Promo code applied! You save ${(originalPrice - newPrice!).toStringAsFixed(0)}'
+                                                              ,
                                                               style: TextStyle(
                                                                 fontSize: isTablet ? 14.sp : 12.sp,
                                                                 color: AppColors.green,
@@ -1121,7 +1085,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                                             ),
                                           ),
                                           Text(
-                                            '${originalPrice.toStringAsFixed(2)} EGP',
+                                            '${originalPrice.toStringAsFixed(2)} ',
                                             style: TextStyle(
                                               fontSize: isTablet ? 16.sp : 14.sp,
                                               color: AppColors.grey[600],
@@ -1144,7 +1108,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                                           ),
                                         ),
                                         Text(
-                                          '${finalPrice.toStringAsFixed(2)} EGP',
+                                          '${finalPrice.toStringAsFixed(2)}',
                                           style: TextStyle(
                                             fontSize: isTablet ? 20.sp : 18.sp,
                                             fontWeight: FontWeight.bold,
@@ -1158,7 +1122,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                               ),
                               SizedBox(height: 12.h),
                               Text(
-                                'Duration: ${chapter == null ? (course.allPrices?.isNotEmpty == true ? course.allPrices!.first.duration ?? 30 : 30) : (chapter.chapterAllPrices?.isNotEmpty == true ? chapter.chapterAllPrices!.first.duration ?? 30 : 30)} days',
+                                'Duration: ${chapters == null ? (course.allPrices?.isNotEmpty == true ? course.allPrices!.first.duration ?? 30 : 30) : (chapters.first.chapterAllPrices?.isNotEmpty == true ? chapters.first.chapterAllPrices!.first.duration ?? 30 : 30)} days',
                                 style: TextStyle(
                                   fontSize: isTablet ? 16.sp : 14.sp,
                                   color: AppColors.grey[700],
@@ -1264,14 +1228,19 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                                         description: 'Pay using your wallet balance',
                                         logo: '',
                                       ),
-                                      PaymentMethodDm(
-                                        id: '10',
-                                        payment: 'Visacard/ Mastercard',
-                                        paymentType: 'integration',
-                                        description: 'Pay using Paymob',
-                                        logo: 'https://cdn.paymob.com/images/logos/paymob-logo.png',
-                                      ),
-                                      ...?state.paymentMethodsResponse.paymentMethods,
+                                      ...state.paymentMethodsResponse.paymentMethods!.map((method) {
+                                        // If the method ID is '10', override the payment name
+                                        if (method.id.toString() == '10') {
+                                          return PaymentMethodDm(
+                                            id: method.id,
+                                            payment: 'Visacard/Mastercard', // Ensure the name is always Visacard/Mastercard
+                                            paymentType: method.paymentType,
+                                            description: method.description,
+                                            logo: method.logo,
+                                          );
+                                        }
+                                        return method;
+                                      }).toList(),
                                     ];
                                     return Column(
                                       children: methods.map((method) {
@@ -1279,7 +1248,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                                         return GestureDetector(
                                           onTap: () {
                                             setModalState(() {
-                                              selectedPaymentMethodId = method.id.toString(); // Fixed: Convert to String
+                                              selectedPaymentMethodId = method.id.toString();
                                             });
                                           },
                                           child: Container(
@@ -1527,10 +1496,10 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                               }
 
                               try {
-                                if (chapter == null) {
+                                if (chapters == null) {
                                   await buyCourseCubit.buyPackage(
                                     courseId: "${course.id ?? 0}",
-                                    paymentMethodId: selectedPaymentMethodId!, // Now it's String
+                                    paymentMethodId: selectedPaymentMethodId!,
                                     amount: finalPrice.toStringAsFixed(2),
                                     userId: "${SelectedStudent.studentId}",
                                     duration: "${course.allPrices?.isNotEmpty == true ? course.allPrices!.first.duration ?? 30 : 30}",
@@ -1538,13 +1507,17 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
                                     promoCode: promoController.text.isNotEmpty ? promoController.text : null,
                                   );
                                 } else {
-                                  await chapterDataCubit.buyChapter(
+                                  await chapterDataCubit.buyChapters(
                                     courseId: "${course.id ?? 0}",
-                                    paymentMethodId: selectedPaymentMethodId!, // Now it's String
+                                    paymentMethodId: selectedPaymentMethodId!,
                                     amount: finalPrice.toStringAsFixed(2),
                                     userId: "${SelectedStudent.studentId}",
-                                    chapterId: "${chapter.id ?? 0}",
-                                    duration: "${chapter.chapterAllPrices?.isNotEmpty == true ? chapter.chapterAllPrices!.first.duration ?? 30 : 30}",
+                                    chapters: chapters
+                                        .map((chapter) => {
+                                      'chapter_id': "${chapter.id ?? 0}",
+                                      'duration': "${chapter.chapterAllPrices?.isNotEmpty == true ? chapter.chapterAllPrices!.first.duration ?? 30 : 30}",
+                                    })
+                                        .toList(),
                                     image: imageData,
                                     promoCode: promoController.text.isNotEmpty ? promoController.text : null,
                                   );
@@ -2012,8 +1985,17 @@ class _CourseCardState extends State<CourseCard> with SingleTickerProviderStateM
   late Animation<double> _scaleAnimation;
   late Animation<double> _elevationAnimation;
 
-  bool get isTablet => MediaQuery.of(context).size.width > 600;
-  bool get isDesktop => MediaQuery.of(context).size.width > 1024;
+  bool get isTablet =>
+      MediaQuery
+          .of(context)
+          .size
+          .width > 600;
+
+  bool get isDesktop =>
+      MediaQuery
+          .of(context)
+          .size
+          .width > 1024;
 
   @override
   void initState() {
@@ -2096,7 +2078,8 @@ class _CourseCardState extends State<CourseCard> with SingleTickerProviderStateM
               ? Image.network(
             widget.course.courseImage!,
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
+            errorBuilder: (context, error, stackTrace) =>
+                _buildPlaceholderImage(),
             loadingBuilder: (context, child, loadingProgress) {
               if (loadingProgress == null) return child;
               return Container(
@@ -2104,7 +2087,8 @@ class _CourseCardState extends State<CourseCard> with SingleTickerProviderStateM
                 child: Center(
                   child: CircularProgressIndicator(
                     value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                        ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
                         : null,
                     strokeWidth: 2.w,
                     color: AppColors.primary,
@@ -2256,7 +2240,8 @@ class _CourseCardState extends State<CourseCard> with SingleTickerProviderStateM
           ),
           SizedBox(width: 4.w),
           Text(
-            '${widget.course.price} EGP',
+            '${widget.course.price} '
+            ,
             style: TextStyle(
               fontSize: isTablet ? 16.sp : 14.sp,
               fontWeight: FontWeight.bold,

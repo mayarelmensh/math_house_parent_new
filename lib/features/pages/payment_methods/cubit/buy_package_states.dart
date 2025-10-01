@@ -5,14 +5,19 @@ class BuyPackageInitial extends BuyPackageState {}
 class BuyPackageLoadingState extends BuyPackageState {}
 
 class BuyPackageSuccess extends BuyPackageState {
-  final String? paymentLink; // Added to handle Paymob response
-  final dynamic response; // Adjust based on your actual response model
+  final dynamic response;
 
-  BuyPackageSuccess({this.paymentLink, this.response});
+  BuyPackageSuccess({this.response});
+}
+
+class BuyPackagePaymentPendingState extends BuyPackageState {
+  final String paymentLink;
+
+  BuyPackagePaymentPendingState(this.paymentLink);
 }
 
 class BuyPackageError extends BuyPackageState {
-  final String? message;
+  final String message;
 
   BuyPackageError(this.message);
 }

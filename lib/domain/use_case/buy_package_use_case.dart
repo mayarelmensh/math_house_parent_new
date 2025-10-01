@@ -11,7 +11,7 @@ class BuyPackageUseCase {
   Future<BuyPackageEntity> execute({
     required int userId,
     required dynamic paymentMethodId,
-    required String image,
+    required String? image,
     required int packageId,
   }) {
     return repository.buyPackage(

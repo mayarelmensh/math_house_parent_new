@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-
 import '../../../../data/models/payment_history_response_dm.dart';
 
 abstract class PaymentState extends Equatable {
@@ -15,12 +14,17 @@ class PaymentLoading extends PaymentState {}
 
 class PaymentSuccess extends PaymentState {
   final List<PaymentModel> payments;
-  final List<PaymentModel>? allPayments; // للاحتفاظ بجميع البيانات عند التصفية
+  final List<PaymentModel>? allPayments;
+  final List<String> availablePaymentMethods; // Added field
 
-  const PaymentSuccess({required this.payments, this.allPayments});
+  const PaymentSuccess({
+    required this.payments,
+    this.allPayments,
+    required this.availablePaymentMethods, // Make it required
+  });
 
   @override
-  List<Object?> get props => [payments, allPayments];
+  List<Object?> get props => [payments, allPayments, availablePaymentMethods];
 }
 
 class PaymentError extends PaymentState {

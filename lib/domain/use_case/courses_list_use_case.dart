@@ -9,7 +9,7 @@ class CoursesListUseCase {
   CoursesListRepository coursesListRepository;
   CoursesListUseCase({required this.coursesListRepository});
 
-  Future<Either<Failures, CoursesResponseEntity>> invoke() async {
-    return await coursesListRepository.getCoursesList();
+  Future<Either<Failures, CoursesResponseEntity>> invoke(int studentId) async {
+    return await coursesListRepository.getCoursesList(studentId);
   }
 }

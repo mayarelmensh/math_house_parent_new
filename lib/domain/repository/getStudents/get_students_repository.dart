@@ -4,5 +4,5 @@ import 'package:math_house_parent_new/domain/entities/get_students_response_enti
 
 abstract class GetStudentsRepository {
   Future<Either<Failures, List<StudentsEntity>>> getStudents();
-  Future<Either<Failures, List<StudentsEntity>>> getMyStudents();
+  Future<Either<Failures, List<MyStudentsEntity>>> getMyStudents();
 }

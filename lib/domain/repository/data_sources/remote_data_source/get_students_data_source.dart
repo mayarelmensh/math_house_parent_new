@@ -4,5 +4,5 @@ import '../../../entities/get_students_response_entity.dart';
 
 abstract class GetStudentsRemoteDataSource {
   Future<Either<Failures, List<StudentsEntity>>> getStudents();
-  Future<Either<Failures, List<StudentsEntity>>> getMyStudents();
+  Future<Either<Failures, List<MyStudentsEntity>>> getMyStudents();
 }

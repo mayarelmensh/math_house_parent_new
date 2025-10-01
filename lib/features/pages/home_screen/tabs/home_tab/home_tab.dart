@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:math_house_parent_new/core/cache/shared_preferences_utils.dart';
 import 'package:math_house_parent_new/core/utils/app_colors.dart';
 import 'package:math_house_parent_new/core/utils/app_routes.dart';
 import 'package:math_house_parent_new/core/widgets/build_card_home.dart';
@@ -8,8 +9,22 @@ import 'package:math_house_parent_new/core/widgets/custom_app_bar.dart';
 import 'package:math_house_parent_new/data/models/student_selected.dart';
 import '../../../my_packages_screen/cubit/my_package_cubit.dart';
 
-class HomeTab extends StatelessWidget {
+class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
+
+  @override
+  State<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+  String? selectedStudentCategory;
+
+  @override
+  void initState() {
+    super.initState();
+    // Retrieve studentCategory from shared preferences
+    selectedStudentCategory = SharedPreferenceUtils.getData(key: 'studentCategory') as String?;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +42,6 @@ class HomeTab extends StatelessWidget {
             ),
             backgroundColor: AppColors.primary,
             duration: const Duration(seconds: 3),
-
           ),
         );
       });
@@ -42,7 +56,7 @@ class HomeTab extends StatelessWidget {
         showArrowBack: false,
         actions: [
           Padding(
-            padding:  EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Image.asset("assets/images/logo.png"),
           ),
         ],
@@ -53,6 +67,18 @@ class HomeTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Display selected student category
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+              child: Text(
+                'Selected Student Category: ${selectedStudentCategory ?? "No category selected"}',
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryColor,
+                ),
+              ),
+            ),
             // GridView for Home Cards
             Expanded(
               child: GridView.count(
@@ -75,7 +101,7 @@ class HomeTab extends StatelessWidget {
                     title: "Packages",
                     subtitle: " Go To Buy packages",
                     onTap: () {
-                      Navigator.pushNamed(context, AppRoutes.packagesScreen);
+                      Navigator.pushNamed(context, AppRoutes.selectBuyOrMyPackagesScreen);
                     },
                   ),
                   HomeCard(
@@ -116,160 +142,12 @@ class HomeTab extends StatelessWidget {
                 ],
               ),
             ),
-            // My Packages Section as Bullet Points
-            SizedBox(height: 20.h),
-            Text(
-              'Your Active Package',
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primaryColor,
-              ),
-            ),
-            SizedBox(height: 2.h),
-            BlocBuilder<MyPackageCubit, MyPackageState>(
-              builder: (context, state) {
-                if (state is MyPackageInitial) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Preparing your packages...'),
-                      SizedBox(height: 2.h),
-                      Text(
-                        'You must check if you have selected your student.',
-                        style: TextStyle(
-                          color: AppColors.darkGray,
-                          fontSize: 14.sp,
-                        ),
-                      ),
-                    ],
-                  );
-                } else if (state is MyPackageLoading) {
-                  return Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primary,
-                      strokeWidth: 4.w,
-                    ),
-                  );
-                } else if (state is MyPackageLoaded) {
-                  if (state.package.exams == 0 &&
-                      state.package.questions == 0 &&
-                      state.package.lives == 0) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'No Active Packages',
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primaryColor,
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        Text(
-                          'You don\'t have any active packages.',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            color: AppColors.grey,
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        TextButton(
-                          onPressed: () {
-                            context.read<MyPackageCubit>().fetchMyPackageData(
-                              userId: SelectedStudent.studentId,
-                            );
-                          },
-                          child: Text(
-                            'Refresh',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildBulletPoint(
-                        icon: Icons.quiz,
-                        label: 'Exams',
-                        value: '${state.package.exams ?? 0}',
-                        color: AppColors.primary,
-                      ),
-                      SizedBox(height: 8.h),
-                      _buildBulletPoint(
-                        icon: Icons.question_answer,
-                        label: 'Questions',
-                        value: '${state.package.questions ?? 0}',
-                        color: AppColors.blue,
-                      ),
-                      SizedBox(height: 8.h),
-                      _buildBulletPoint(
-                        icon: Icons.live_tv,
-                        label: 'Lives',
-                        value: '${state.package.lives ?? 0}',
-                        color: AppColors.green,
-                      ),
-                    ],
-                  );
-                } else if (state is MyPackageError) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                        Text(
-                          'Error Loading Packages',
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.red,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            context.read<MyPackageCubit>().fetchMyPackageData(
-                              userId: SelectedStudent.studentId,
-                            );
-                          },
-                          child: Text(
-                            'Try Again',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],),
-                      SizedBox(height: 3.h),
-                      Text(
-                        'You must check if you have selected your student.',
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          color: AppColors.black,
-                        ),
-                      ),
-                      SizedBox(height: 2.h),
-
-                    ],
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
           ],
         ),
       ),
     );
   }
+}
 
   Widget _buildBulletPoint({
     required IconData icon,
@@ -302,7 +180,7 @@ class HomeTab extends StatelessWidget {
       ],
     );
   }
-}
+
 
 
 

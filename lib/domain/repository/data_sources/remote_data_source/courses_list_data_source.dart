@@ -3,5 +3,5 @@ import '../../../../core/errors/failures.dart';
 import '../../../entities/courses_response_entity.dart';
 
 abstract class CoursesListDataSource {
-  Future<Either<Failures, CoursesResponseEntity>> getCoursesList();
+  Future<Either<Failures, CoursesResponseEntity>> getCoursesList(int studentId);
 }

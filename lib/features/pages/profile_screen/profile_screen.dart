@@ -212,7 +212,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStudentsSection(List<StudentsEntity> students) {
+  Widget _buildStudentsSection(List<MyStudentsEntity> students) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(20.w),
@@ -260,7 +260,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStudentCard(StudentsEntity student) {
+  Widget _buildStudentCard(MyStudentsEntity student) {
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(16.w),

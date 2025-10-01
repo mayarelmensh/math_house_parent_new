@@ -1,4 +1,3 @@
-// wallet_recharge_cubit.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
@@ -46,7 +45,14 @@ class WalletRechargeCubit extends Cubit<WalletRechargeStates> {
         final walletRechargeResponse = WalletRechargeResponseEntity.fromJson(
           response.data,
         );
-        emit(WalletRechargeSuccessState(walletRechargeResponse));
+        if (paymentMethodId.toString() == '10' &&
+            walletRechargeResponse.paymentLink != null &&
+            walletRechargeResponse.paymentLink!.isNotEmpty) {
+          emit(WalletRechargePaymentPendingState(
+              walletRechargeResponse.paymentLink!));
+        } else {
+          emit(WalletRechargeSuccessState(walletRechargeResponse));
+        }
       } else {
         emit(WalletRechargeErrorState('Failed to recharge wallet'));
       }
@@ -65,6 +71,25 @@ class WalletRechargeCubit extends Cubit<WalletRechargeStates> {
       emit(WalletRechargeErrorState(errorMessage));
     } catch (e) {
       emit(WalletRechargeErrorState('Unexpected error: ${e.toString()}'));
+    }
+  }
+
+  void handlePaymentResult(String url) {
+    if (url.contains('success=true') &&
+        url.contains('txn_response_code=APPROVED') &&
+        url.contains('error_occured=false')) {
+      emit(WalletRechargeSuccessState(
+          WalletRechargeResponseEntity(success: 'Wallet recharged successfully')));
+    } else if (url.contains('success=false') ||
+        url.contains('error_occured=true') ||
+        url.contains('txn_response_code=DECLINED')) {
+      String errorMessage = 'Payment failed';
+      if (url.contains('txn_response_code=DECLINED')) {
+        errorMessage = 'Payment was declined by the payment gateway';
+      } else if (url.contains('error_occured=true')) {
+        errorMessage = 'An error occurred during payment processing';
+      }
+      emit(WalletRechargeErrorState(errorMessage));
     }
   }
 }

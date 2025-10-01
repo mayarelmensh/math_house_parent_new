@@ -16,7 +16,7 @@ class GetStudentsRepositoryImpl implements GetStudentsRepository {
   }
 
   @override
-  Future<Either<Failures, List<StudentsEntity>>> getMyStudents() async {
+  Future<Either<Failures, List<MyStudentsEntity>>> getMyStudents() async {
     var either = await getStudentsDataSource.getMyStudents();
     return either.fold((error) => Left(error), (response) => Right(response));
   }

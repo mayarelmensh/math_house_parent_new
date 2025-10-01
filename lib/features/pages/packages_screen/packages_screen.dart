@@ -7,9 +7,10 @@ import 'package:math_house_parent_new/core/utils/app_routes.dart';
 import 'package:math_house_parent_new/core/widgets/custom_app_bar.dart';
 import '../../../core/di/di.dart';
 import '../../../data/models/student_selected.dart';
-import '../../../domain/entities/courses_response_entity.dart';
-import '../courses_screen/cubit/courses_cubit.dart';
-import '../courses_screen/cubit/courses_states.dart';
+import '../../../data/models/my_course_model.dart';
+
+import '../my_courses_screen/cuibt/my_courses_cuibt.dart';
+import '../my_courses_screen/cuibt/my_courses_states.dart';
 import 'cubit/packages_cubit.dart';
 import 'cubit/packages_states.dart';
 
@@ -21,15 +22,18 @@ class PackagesScreen extends StatefulWidget {
 }
 
 class _PackagesScreenState extends State<PackagesScreen> {
-  CourseEntity? selectedCourse;
+  MyCourse? selectedCourse;
   String? selectedModuleFilter;
   final packagesCubit = getIt<PackagesCubit>();
-  final coursesCubit = getIt<CoursesCubit>();
+  final myCoursesCubit = getIt<MyCoursesCubit>();
+  bool _isLoadButtonPressed = false;
 
   @override
   void initState() {
     super.initState();
-    coursesCubit.getCoursesList();
+    if (SelectedStudent.studentId != null) {
+      myCoursesCubit.fetchMyCourses(SelectedStudent.studentId!);
+    }
   }
 
   @override
@@ -44,6 +48,9 @@ class _PackagesScreenState extends State<PackagesScreen> {
   }
 
   void _loadPackages() {
+    setState(() => _isLoadButtonPressed = true);
+    Future.delayed(Duration(milliseconds: 200), () => setState(() => _isLoadButtonPressed = false));
+
     final studentId = SelectedStudent.studentId;
     print(studentId);
 
@@ -52,8 +59,13 @@ class _PackagesScreenState extends State<PackagesScreen> {
         SnackBar(
           content: Text(
             'Please select a student first',
-            style: TextStyle(fontSize: 14.sp),
+            style: TextStyle(fontSize: 13.sp, color: Colors.white),
           ),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(12.w),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+          duration: Duration(seconds: 3),
         ),
       );
       return;
@@ -61,7 +73,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
 
     if (selectedCourse != null) {
       packagesCubit.getPackagesForCourse(
-        courseId: selectedCourse!.id!,
+        courseId: selectedCourse!.id,
         userId: studentId,
       );
     } else {
@@ -69,9 +81,13 @@ class _PackagesScreenState extends State<PackagesScreen> {
         SnackBar(
           content: Text(
             'Please select a course first',
-            style: TextStyle(fontSize: 14.sp),
+            style: TextStyle(fontSize: 13.sp, color: Colors.white),
           ),
-          backgroundColor: Colors.orange,
+          backgroundColor: Colors.orangeAccent,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(12.w),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+          duration: Duration(seconds: 3),
         ),
       );
     }
@@ -85,10 +101,33 @@ class _PackagesScreenState extends State<PackagesScreen> {
 
   Widget _buildCompactSelectionRow() {
     return Container(
-      margin: EdgeInsets.only(bottom: 20.h),
+      margin: EdgeInsets.symmetric(vertical: 10.h),
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.15),
+            spreadRadius: 1.r,
+            blurRadius: 8.r,
+            offset: Offset(0, 3.h),
+          ),
+        ],
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Course and Filter Selection Row
+          Text(
+            "Course & Filter",
+            style: TextStyle(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+              letterSpacing: 0.3,
+            ),
+          ),
+          SizedBox(height: 12.h),
           Row(
             children: [
               // Course Selection
@@ -97,22 +136,23 @@ class _PackagesScreenState extends State<PackagesScreen> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1.r,
-                        blurRadius: 4.r,
-                        offset: Offset(0, 2.h),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(10.r),
+                    border: Border.all(
+                      color: Colors.grey.shade200,
+                      width: 1,
+                    ),
+                    gradient: LinearGradient(
+                      colors: [Colors.grey.shade100, Colors.white],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                   ),
-                  child: BlocBuilder<CoursesCubit, CoursesStates>(
-                    bloc: coursesCubit,
+                  child: BlocBuilder<MyCoursesCubit, MyCoursesState>(
+                    bloc: myCoursesCubit,
                     builder: (context, state) {
-                      if (state is CoursesLoadingState) {
+                      if (state is MyCoursesLoading || state is MyCoursesRefreshing) {
                         return Container(
-                          padding: EdgeInsets.all(16.w),
+                          padding: EdgeInsets.all(12.w),
                           child: Center(
                             child: SizedBox(
                               height: 20.h,
@@ -124,34 +164,41 @@ class _PackagesScreenState extends State<PackagesScreen> {
                             ),
                           ),
                         );
-                      } else if (state is CoursesSuccessState) {
-                        final courses = state.coursesResponseEntity.categories!
-                            .expand((cat) => cat.course!)
-                            .toList();
-                        return DropdownButtonFormField<CourseEntity>(
-                          isExpanded: true, // عشان يمنع الأوفرفلو
+                      }
+                      else if (state is MyCoursesLoaded) {
+                        final courses = state.courses;
+                        return DropdownButtonFormField<MyCourse>(
+                          isExpanded: true,
                           decoration: InputDecoration(
                             isDense: true,
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 12.w,
-                              vertical: 12.h,
+                              vertical: 10.h,
                             ),
                             hintText: "Select Course",
                             prefixIcon: Icon(
                               Icons.school,
                               color: AppColors.primaryColor,
-                              size: 20.sp,
+                              size: 18.sp,
                             ),
                             border: InputBorder.none,
-                            hintStyle: TextStyle(fontSize: 14.sp),
+                            hintStyle: TextStyle(
+                              fontSize: 13.sp,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                           value: selectedCourse,
                           items: courses.map((c) {
                             return DropdownMenuItem(
                               value: c,
                               child: Text(
-                                c.courseName ?? "",
-                                style: TextStyle(fontSize: 14.sp),
+                                c.courseName,
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             );
@@ -161,16 +208,36 @@ class _PackagesScreenState extends State<PackagesScreen> {
                           },
                         );
                       }
+                      else if (state is MyCoursesEmpty) {
+                        return Container(
+                          padding: EdgeInsets.all(12.w),
+                          child: Text(
+                            "No courses available",
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        );
+                      }
                       return Container(
-                        padding: EdgeInsets.all(16.w),
-                        child: Text("Error", style: TextStyle(fontSize: 14.sp)),
+                        padding: EdgeInsets.all(12.w),
+                        child: Text(
+                          "Error loading courses",
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       );
                     },
                   ),
                 ),
               ),
 
-              SizedBox(width: 12.w),
+              SizedBox(width: 10.w),
 
               // Module Filter
               Expanded(
@@ -178,50 +245,55 @@ class _PackagesScreenState extends State<PackagesScreen> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1.r,
-                        blurRadius: 4.r,
-                        offset: Offset(0, 2.h),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(10.r),
+                    border: Border.all(
+                      color: Colors.grey.shade200,
+                      width: 1,
+                    ),
+                    gradient: LinearGradient(
+                      colors: [Colors.grey.shade100, Colors.white],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                   ),
                   child: DropdownButtonFormField<String>(
-                    isExpanded: true, // عشان يمنع الأوفرفلو
+                    isExpanded: true,
                     decoration: InputDecoration(
                       isDense: true,
                       contentPadding: EdgeInsets.symmetric(
                         horizontal: 12.w,
-                        vertical: 12.h,
+                        vertical: 10.h,
                       ),
                       hintText: "Filter",
                       prefixIcon: Icon(
                         Icons.filter_list,
                         color: AppColors.primaryColor,
-                        size: 20.sp,
+                        size: 18.sp,
                       ),
                       border: InputBorder.none,
-                      hintStyle: TextStyle(fontSize: 14.sp),
+                      hintStyle: TextStyle(
+                        fontSize: 13.sp,
+                        color: Colors.grey.shade500,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     value: selectedModuleFilter,
                     items: const [
                       DropdownMenuItem(
                         value: 'All',
-                        child: Text("All", style: TextStyle(fontSize: 14)),
+                        child: Text("All", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                       ),
                       DropdownMenuItem(
                         value: 'Live',
-                        child: Text("Live", style: TextStyle(fontSize: 14)),
+                        child: Text("Live", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                       ),
                       DropdownMenuItem(
                         value: 'Question',
-                        child: Text("Question", style: TextStyle(fontSize: 14)),
+                        child: Text("Question", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                       ),
                       DropdownMenuItem(
                         value: 'Exam',
-                        child: Text("Exam", style: TextStyle(fontSize: 14)),
+                        child: Text("Exam", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                       ),
                     ],
                     onChanged: (val) {
@@ -233,29 +305,55 @@ class _PackagesScreenState extends State<PackagesScreen> {
             ],
           ),
 
-          SizedBox(height: 16.h),
+          SizedBox(height: 12.h),
 
           // Load Button
-          SizedBox(
+          AnimatedContainer(
+            duration: Duration(milliseconds: 200),
             width: double.infinity,
-            height: 48.h,
-            child: ElevatedButton.icon(
-              onPressed: _loadPackages,
-              icon: Icon(Icons.refresh, color: Colors.white, size: 20.sp),
-              label: Text(
-                "Load Packages",
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+            height: 44.h,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primaryColor,
+                  AppColors.primaryColor.withOpacity(0.85),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
+              borderRadius: BorderRadius.circular(12.r),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryColor.withOpacity(_isLoadButtonPressed ? 0.2 : 0.35),
+                  spreadRadius: 1.r,
+                  blurRadius: 6.r,
+                  offset: Offset(0, _isLoadButtonPressed ? 1.h : 3.h),
                 ),
-                elevation: 2,
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12.r),
+                onTap: _loadPackages,
+                child: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.refresh, color: Colors.white, size: 18.sp),
+                      SizedBox(width: 6.w),
+                      Text(
+                        "Load Packages",
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -265,112 +363,114 @@ class _PackagesScreenState extends State<PackagesScreen> {
   }
 
   Widget _buildEnhancedPackageCard(dynamic package) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 16.h),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.white, Colors.grey.shade50],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.15),
-            spreadRadius: 1.r,
-            blurRadius: 8.r,
-            offset: Offset(0, 3.h),
+    bool _isBuyButtonPressed = false;
+
+    return StatefulBuilder(
+      builder: (context, setCardState) {
+        return Container(
+          margin: EdgeInsets.only(bottom: 16.h),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1.r,
+                blurRadius: 8.r,
+                offset: Offset(0, 3.h),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(20.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with package name and module badge
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Padding(
+            padding: EdgeInsets.all(12.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    package.name ?? "Unnamed Package",
-                    style: TextStyle(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 14.w,
-                    vertical: 8.h,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: _getModuleGradientColors(package.module),
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(25.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _getModuleColor(package.module).withOpacity(0.3),
-                        spreadRadius: 1.r,
-                        blurRadius: 4.r,
-                        offset: Offset(0, 2.h),
+                // Header with package name and module badge
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        package.name ?? "Unnamed Package",
+                        style: TextStyle(
+                          fontSize: 17.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                          letterSpacing: 0.2,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: _getModuleGradientColors(package.module),
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _getModuleColor(package.module).withOpacity(0.25),
+                            spreadRadius: 1.r,
+                            blurRadius: 4.r,
+                            offset: Offset(0, 1.h),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getModuleIcon(package.module),
+                            color: Colors.white,
+                            size: 14.sp,
+                          ),
+                          SizedBox(width: 4.w),
+                          Text(
+                            _getModuleText(package.module),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 10.h),
+
+                // Price and Duration
+                Container(
+                  padding: EdgeInsets.all(10.w),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(color: Colors.grey.shade200, width: 1),
                   ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        _getModuleIcon(package.module),
-                        color: Colors.white,
-                        size: 14.sp,
-                      ),
-                      SizedBox(width: 6.w),
-                      Text(
-                        _getModuleText(package.module),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            SizedBox(height: 16.h),
-
-            // Price and Duration with enhanced styling
-            Container(
-              padding: EdgeInsets.all(16.w),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Row(
-                children: [
-                  // Price Section
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                      // Price Section
+                      Expanded(
+                        child: Row(
                           children: [
                             Container(
                               padding: EdgeInsets.all(8.w),
                               decoration: BoxDecoration(
-                                color: Colors.green.shade100,
-                                borderRadius: BorderRadius.circular(8.r),
+                                color: Colors.green.shade50,
+                                borderRadius: BorderRadius.circular(10.r),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.green.shade100.withOpacity(0.2),
+                                    spreadRadius: 1.r,
+                                    blurRadius: 4.r,
+                                  ),
+                                ],
                               ),
                               child: Icon(
                                 Icons.attach_money,
@@ -393,8 +493,8 @@ class _PackagesScreenState extends State<PackagesScreen> {
                                 Text(
                                   "${package.price ?? 0} EGP",
                                   style: TextStyle(
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15.sp,
+                                    fontWeight: FontWeight.w700,
                                     color: Colors.green.shade700,
                                   ),
                                 ),
@@ -402,22 +502,17 @@ class _PackagesScreenState extends State<PackagesScreen> {
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
 
-                  Container(
-                    height: 40.h,
-                    width: 1.w,
-                    color: Colors.grey.shade300,
-                  ),
+                      Container(
+                        height: 36.h,
+                        width: 1.w,
+                        color: Colors.grey.shade200,
+                      ),
 
-                  // Duration Section
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Row(
+                      // Duration Section
+                      Expanded(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Column(
@@ -434,9 +529,9 @@ class _PackagesScreenState extends State<PackagesScreen> {
                                 Text(
                                   "${package.duration ?? 0} days",
                                   style: TextStyle(
-                                    fontSize: 16.sp,
+                                    fontSize: 15.sp,
+                                    fontWeight: FontWeight.w700,
                                     color: Colors.blue.shade700,
-                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ],
@@ -445,8 +540,15 @@ class _PackagesScreenState extends State<PackagesScreen> {
                             Container(
                               padding: EdgeInsets.all(8.w),
                               decoration: BoxDecoration(
-                                color: Colors.blue.shade100,
-                                borderRadius: BorderRadius.circular(8.r),
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(10.r),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.blue.shade100.withOpacity(0.2),
+                                    spreadRadius: 1.r,
+                                    blurRadius: 4.r,
+                                  ),
+                                ],
                               ),
                               child: Icon(
                                 Icons.access_time,
@@ -456,105 +558,132 @@ class _PackagesScreenState extends State<PackagesScreen> {
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
 
-            SizedBox(height: 16.h),
+                SizedBox(height: 10.h),
 
-            // Enhanced Buy Button
-            SizedBox(
-              width: double.infinity,
-              height: 50.h,
-              child: ElevatedButton(
-                onPressed: () {
-                  if (SelectedStudent.studentId != null) {
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.paymentMethodsScreen,
-                      arguments: {
-                        'packageId': package.id,
-                        'packageName': package.name,
-                        'packagePrice': package.price,
-                        'packageModule': package.module,
-                        'packageDuration': package.duration,
+                // Buy Button
+                AnimatedContainer(
+                  duration: Duration(milliseconds: 200),
+                  width: double.infinity,
+                  height: 44.h,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primaryColor,
+                        AppColors.primaryColor.withOpacity(0.85),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primaryColor.withOpacity(_isBuyButtonPressed ? 0.2 : 0.35),
+                        spreadRadius: 1.r,
+                        blurRadius: 6.r,
+                        offset: Offset(0, _isBuyButtonPressed ? 1.h : 3.h),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12.r),
+                      onTapDown: (_) => setCardState(() => _isBuyButtonPressed = true),
+                      onTapCancel: () => setCardState(() => _isBuyButtonPressed = false),
+                      onTap: () {
+                        setCardState(() => _isBuyButtonPressed = false);
+                        if (SelectedStudent.studentId != null) {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.paymentMethodsScreen,
+                            arguments: {
+                              'packageId': package.id,
+                              'packageName': package.name,
+                              'packagePrice': package.price,
+                              'packageModule': package.module,
+                              'packageDuration': package.duration,
+                            },
+                          );
+                          debugPrint(
+                            "🛒 Buy package: ${package.id}, for student: ${SelectedStudent.studentId} ",
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Please select a student first',
+                                style: TextStyle(fontSize: 13.sp, color: Colors.white),
+                              ),
+                              backgroundColor: Colors.redAccent,
+                              behavior: SnackBarBehavior.floating,
+                              margin: EdgeInsets.all(12.w),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                        }
                       },
-                    );
-                    debugPrint(
-                      "🛒 Buy package: ${package.id}, for student: ${SelectedStudent.studentId} ",
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Please select a student first',
-                          style: TextStyle(fontSize: 14.sp),
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.shopping_cart,
+                              color: Colors.white,
+                              size: 18.sp,
+                            ),
+                            SizedBox(width: 6.w),
+                            Text(
+                              'Buy Package',
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.r),
+                    ),
                   ),
-                  elevation: 3,
-                  shadowColor: AppColors.primaryColor.withOpacity(0.3),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.shopping_cart,
-                      color: AppColors.white,
-                      size: 20.sp,
-                    ),
-                    SizedBox(width: 8.w),
-                    Text(
-                      'Buy Package',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   Color _getModuleColor(String? module) {
     switch (module?.toLowerCase()) {
       case 'live':
-        return Colors.red.shade500;
+        return Colors.red.shade600;
       case 'question':
-        return Colors.blue.shade500;
+        return Colors.blue.shade600;
       case 'exam':
-        return Colors.purple.shade500;
+        return Colors.purple.shade600;
       default:
-        return Colors.grey.shade500;
+        return Colors.grey.shade600;
     }
   }
 
   List<Color> _getModuleGradientColors(String? module) {
     switch (module?.toLowerCase()) {
       case 'live':
-        return [Colors.red.shade400, Colors.red.shade600];
+        return [Colors.red.shade500, Colors.red.shade700];
       case 'question':
-        return [Colors.blue.shade400, Colors.blue.shade600];
+        return [Colors.blue.shade500, Colors.blue.shade700];
       case 'exam':
-        return [Colors.purple.shade400, Colors.purple.shade600];
+        return [Colors.purple.shade500, Colors.purple.shade700];
       default:
-        return [Colors.grey.shade400, Colors.grey.shade600];
+        return [Colors.grey.shade500, Colors.grey.shade700];
     }
   }
 
@@ -587,20 +716,20 @@ class _PackagesScreenState extends State<PackagesScreen> {
   @override
   Widget build(BuildContext context) {
     return ScreenUtilInit(
-      designSize: const Size(360, 690), // حجم التصميم الأساسي
+      designSize: const Size(360, 690),
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
         return MultiBlocProvider(
           providers: [
-            BlocProvider(create: (_) => coursesCubit),
+            BlocProvider(create: (_) => myCoursesCubit),
             BlocProvider(create: (_) => packagesCubit),
           ],
           child: Scaffold(
-            backgroundColor: Colors.grey.shade50,
+            backgroundColor: Colors.grey.shade100,
             appBar: CustomAppBar(title: "Packages"),
             body: Padding(
-              padding: EdgeInsets.all(16.w),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
               child: Column(
                 children: [
                   // Compact Selection Row
@@ -619,11 +748,11 @@ class _PackagesScreenState extends State<PackagesScreen> {
                                   color: AppColors.primaryColor,
                                   strokeWidth: 3.w,
                                 ),
-                                SizedBox(height: 16.h),
+                                SizedBox(height: 12.h),
                                 Text(
                                   "Loading packages...",
                                   style: TextStyle(
-                                    fontSize: 16.sp,
+                                    fontSize: 15.sp,
                                     color: Colors.grey.shade600,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -631,11 +760,8 @@ class _PackagesScreenState extends State<PackagesScreen> {
                               ],
                             ),
                           );
-                        } else if (state
-                            is PackagesSpecificCourseSuccessState) {
-                          var packages = filterPackagesByModule(
-                            state.packagesResponseList,
-                          );
+                        } else if (state is PackagesSpecificCourseSuccessState) {
+                          var packages = filterPackagesByModule(state.packagesResponseList);
                           if (packages.isEmpty) {
                             return Center(
                               child: Column(
@@ -644,8 +770,15 @@ class _PackagesScreenState extends State<PackagesScreen> {
                                   Container(
                                     padding: EdgeInsets.all(20.w),
                                     decoration: BoxDecoration(
-                                      color: Colors.grey.shade200,
-                                      borderRadius: BorderRadius.circular(50.r),
+                                      color: Colors.grey.shade100,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.grey.withOpacity(0.1),
+                                          spreadRadius: 1.r,
+                                          blurRadius: 6.r,
+                                        ),
+                                      ],
                                     ),
                                     child: Icon(
                                       Icons.inbox_outlined,
@@ -653,21 +786,22 @@ class _PackagesScreenState extends State<PackagesScreen> {
                                       color: Colors.grey.shade400,
                                     ),
                                   ),
-                                  SizedBox(height: 20.h),
+                                  SizedBox(height: 12.h),
                                   Text(
                                     "No packages available",
                                     style: TextStyle(
-                                      fontSize: 20.sp,
-                                      color: Colors.grey.shade600,
+                                      fontSize: 18.sp,
+                                      color: Colors.grey.shade700,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  SizedBox(height: 8.h),
+                                  SizedBox(height: 6.h),
                                   Text(
                                     "Try changing the filter or selecting another course",
                                     style: TextStyle(
-                                      fontSize: 14.sp,
+                                      fontSize: 13.sp,
                                       color: Colors.grey.shade500,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -690,8 +824,15 @@ class _PackagesScreenState extends State<PackagesScreen> {
                               Container(
                                 padding: EdgeInsets.all(20.w),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade200,
-                                  borderRadius: BorderRadius.circular(50.r),
+                                  color: Colors.grey.shade100,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.grey.withOpacity(0.1),
+                                      spreadRadius: 1.r,
+                                      blurRadius: 6.r,
+                                    ),
+                                  ],
                                 ),
                                 child: Icon(
                                   Icons.touch_app_outlined,
@@ -699,21 +840,22 @@ class _PackagesScreenState extends State<PackagesScreen> {
                                   color: Colors.grey.shade400,
                                 ),
                               ),
-                              SizedBox(height: 20.h),
+                              SizedBox(height: 12.h),
                               Text(
                                 "Select course first",
                                 style: TextStyle(
-                                  fontSize: 20.sp,
-                                  color: Colors.grey.shade600,
+                                  fontSize: 18.sp,
+                                  color: Colors.grey.shade700,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              SizedBox(height: 8.h),
+                              SizedBox(height: 6.h),
                               Text(
                                 "Then press 'Load Packages' button",
                                 style: TextStyle(
-                                  fontSize: 14.sp,
+                                  fontSize: 13.sp,
                                   color: Colors.grey.shade500,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],

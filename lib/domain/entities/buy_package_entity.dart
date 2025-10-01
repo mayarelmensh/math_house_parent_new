@@ -1,5 +1,13 @@
 class BuyPackageEntity {
-  final String success;
+  final bool? success;
+  final String? paymentLink;
 
-  BuyPackageEntity({required this.success});
+  BuyPackageEntity({this.success, this.paymentLink});
+
+  Map<String, dynamic> toJson() {
+    return {
+      'success': success,
+      'payment_link': paymentLink,
+    };
+  }
 }

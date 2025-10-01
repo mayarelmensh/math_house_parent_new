@@ -16,20 +16,26 @@ class BuyPackageRemoteDataSourceImpl implements BuyPackageRemoteDataSource {
   Future<BuyPackageResponseDm> buyPackage({
     required int userId,
     required dynamic paymentMethodId,
-    required String image,
+    required String? image,
     required int packageId,
   }) async {
     var token = SharedPreferenceUtils.getData(key: 'token');
 
+    int parsedPaymentMethodId = paymentMethodId is String
+        ? (paymentMethodId == 'Wallet' ? 0 : int.parse(paymentMethodId))
+        : paymentMethodId as int;
+
     final response = await apiManager.postData(
-      endPoint: EndPoints.buyPackage+"$packageId",
+      endPoint: EndPoints.buyPackage + "$packageId",
       body: {
         'user_id': userId,
-        'payment_method_id': paymentMethodId,
+        'payment_method_id': parsedPaymentMethodId,
         'image': image,
       },
       options: Options(headers: {'Authorization': 'Bearer $token'}),
     );
+
+    print('API Response (BuyPackage): ${response.data}');
 
     return BuyPackageResponseDm.fromJson(response.data);
   }

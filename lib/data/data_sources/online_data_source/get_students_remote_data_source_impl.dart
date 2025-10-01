@@ -61,7 +61,7 @@ class GetStudentsRemoteDataSourceImpl implements GetStudentsRemoteDataSource {
   }
 
   @override
-  Future<Either<Failures, List<StudentsDm>>> getMyStudents() async {
+  Future<Either<Failures, List<MyStudentsDm>>> getMyStudents() async {
     try {
       final connectivityResult = await Connectivity().checkConnectivity();
       if (!(connectivityResult.contains(ConnectivityResult.wifi) ||
@@ -93,7 +93,7 @@ class GetStudentsRemoteDataSourceImpl implements GetStudentsRemoteDataSource {
 
       final myStudents = data.map((e) {
         if (e is Map<String, dynamic>) {
-          return StudentsDm.fromJson(e);
+          return MyStudentsDm.fromJson(e);
         } else {
           throw Exception("Invalid my_student data format");
         }

@@ -6,19 +6,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:math_house_parent_new/features/pages/payment_methods/cubit/buy_package_states.dart';
+import 'package:math_house_parent_new/core/di/di.dart';
+import 'package:math_house_parent_new/core/utils/app_colors.dart';
+import 'package:math_house_parent_new/core/utils/app_routes.dart';
+import 'package:math_house_parent_new/core/widgets/custom_app_bar.dart';
+import 'package:math_house_parent_new/data/models/student_selected.dart';
+import 'package:math_house_parent_new/domain/entities/payment_methods_response_entity.dart';
+import 'package:math_house_parent_new/features/pages/payment_methods/cubit/payment_methods_cubit.dart';
+import 'package:math_house_parent_new/features/pages/payment_methods/cubit/payment_methods_states.dart';
+import 'package:math_house_parent_new/features/pages/payment_methods/cubit/buy_package_cubit.dart';
+import 'package:math_house_parent_new/core/utils/custom_snack_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
-import '../../../core/di/di.dart';
-import '../../../core/utils/app_colors.dart';
-import '../../../core/utils/app_routes.dart';
-import '../../../core/widgets/custom_app_bar.dart';
-import '../../../data/models/student_selected.dart';
-import '../../../domain/entities/payment_methods_response_entity.dart';
-import '../../widgets/custom_elevated_button.dart';
-import 'cubit/payment_methods_cubit.dart';
-import 'cubit/payment_methods_states.dart';
-import 'cubit/buy_package_cubit.dart';
-import '../../../core/utils/custom_snack_bar.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'dart:developer' as developer;
 
 class PaymentMethodsScreen extends StatefulWidget {
@@ -209,49 +209,45 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
 
   Widget _buildCompactPackageInfoCard() {
     return Container(
-      width: double.infinity,
-      margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-      padding: EdgeInsets.all(isTablet ? 20.w : 13.w),
+      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+      padding: EdgeInsets.all(isTablet ? 20.w : 5.w),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
             AppColors.primary.withOpacity(0.1),
             AppColors.primary.withOpacity(0.05),
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: AppColors.primary.withOpacity(0.3)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-         Row(
-           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-           children: [
-             Text(
-               packageName ?? "N/A",
-               style: TextStyle(
-                 fontSize: isTablet ? 18.sp : 16.sp,
-                 fontWeight: FontWeight.bold,
-                 color: AppColors.grey[800],
-               ),
-               maxLines: 1,
-               overflow: TextOverflow.ellipsis,
-             ),
-
-             Text(
-               'Duration: ${packageDuration ?? 30} days',
-               style: TextStyle(
-                 fontSize: isTablet ? 16.sp : 14.sp,
-                 color: AppColors.grey[700],
-               ),
-             ),
-           ],
-         ),
-          SizedBox(height: 5.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  packageName ?? 'Package',
+                  style: TextStyle(
+                    fontSize: isTablet ? 18.sp : 16.sp,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.grey[800],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text(
+                'Duration: ${packageDuration ?? 30} days',
+                style: TextStyle(
+                  fontSize: isTablet ? 16.sp : 14.sp,
+                  color: AppColors.grey[700],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -273,7 +269,6 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
               ),
             ],
           ),
-
         ],
       ),
     );
@@ -313,33 +308,21 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
     }
   }
 
-  Color _getModuleColor(String? module) {
-    switch (module?.toLowerCase()) {
-      case 'live':
-        return Colors.red.shade500;
-      case 'question':
-        return Colors.blue.shade500;
-      case 'exam':
-        return Colors.purple.shade500;
-      default:
-        return Colors.grey.shade500;
-    }
-  }
-
   Widget _buildPaymentMethodCard(PaymentMethodEntity method) {
     final isSelected = selectedMethod?.id == method.id;
     return GestureDetector(
       onTap: () {
         setState(() {
           selectedMethod = method;
-          if (method.id == 'Wallet' || method.id == '10') {
+          developer.log('Selected payment method ID: ${method.id} (${method.id.runtimeType})');
+          if (method.id == 'Wallet' || method.id.toString() == '10') {
             imageBytes = null;
             base64String = null;
           }
         });
       },
       child: Container(
-        margin: EdgeInsets.only(bottom: 16.h),
+        margin: EdgeInsets.only(bottom: 8.h),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: isSelected
@@ -369,15 +352,15 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
           ],
         ),
         child: Container(
-          padding: EdgeInsets.all(isTablet ? 24.w : 20.w),
+          padding: EdgeInsets.all(isTablet ? 24.w : 10.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    width: isTablet ? 70.w : 60.w,
-                    height: isTablet ? 70.h : 60.h,
+                    width: isTablet ? 70.w : 40.w,
+                    height: isTablet ? 70.h : 40.h,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12.r),
                       color: AppColors.lightGray,
@@ -451,7 +434,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
               if (method.description != null &&
                   method.description!.isNotEmpty &&
                   method.id != '10') ...[
-                SizedBox(height: 8.h),
+                SizedBox(height: 12.h),
                 InkWell(
                   onTap: () => _handlePaymentDescription(method.description!),
                   child: Container(
@@ -491,7 +474,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                   ),
                 ),
               ] else if (method.id == '10') ...[
-                SizedBox(height: 8.h),
+                SizedBox(height: 12.h),
                 Container(
                   padding: EdgeInsets.all(isTablet ? 16.w : 12.w),
                   decoration: BoxDecoration(
@@ -532,7 +515,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
 
   Widget _buildPaymentProofSection() {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 0.h),
+      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 0.h),
       padding: EdgeInsets.all(isTablet ? 20.w : 10.w),
       decoration: BoxDecoration(
         color: AppColors.grey[50],
@@ -545,21 +528,24 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
           Text(
             'Payment Proof',
             style: TextStyle(
-              fontSize: isTablet ? 14.sp : 14.sp,
+              fontSize: isTablet ? 16.sp : 14.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.grey[800],
             ),
           ),
-          SizedBox(height: 6.h),
+          SizedBox(height: 8.h),
           Text(
             'Upload a screenshot or photo of your payment confirmation',
-            style: TextStyle(fontSize: isTablet ? 12.sp : 11.sp, color: AppColors.grey[600]),
+            style: TextStyle(
+              fontSize: isTablet ? 14.sp : 12.sp,
+              color: AppColors.grey[600],
+            ),
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 12.h),
           if (imageBytes != null)
             Container(
               width: double.infinity,
-              height: isTablet ? 200.h : 100.h,
+              height: isTablet ? 200.h : 150.h,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12.r),
                 color: Colors.grey[200],
@@ -573,10 +559,9 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
               ),
             )
           else
-
             Container(
               width: double.infinity,
-              height: isTablet ? 200.h : 30.h,
+              height: isTablet ? 200.h : 50.h,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12.r),
                 color: Colors.grey[200],
@@ -586,7 +571,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                 size: isTablet ? 48.sp : 40.sp,
               ),
             ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 12.h),
           Row(
             children: [
               Expanded(
@@ -607,7 +592,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                     ),
                     padding: EdgeInsets.symmetric(
                       horizontal: isTablet ? 28.w : 24.w,
-                      vertical: isTablet ? 16.h : 12.h,
+                      vertical: isTablet ? 16.h : 10.h,
                     ),
                   ),
                 ),
@@ -642,7 +627,8 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   }
 
   bool _isUrl(String text) {
-    return Uri.tryParse(text)?.hasScheme ?? false && (text.startsWith('http://') || text.startsWith('https://'));
+    return Uri.tryParse(text)?.hasScheme ?? false &&
+        (text.startsWith('http://') || text.startsWith('https://'));
   }
 
   void _handlePaymentDescription(String description) async {
@@ -682,9 +668,11 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
     }
 
     String imageData;
-    if (selectedMethod!.id == 'Wallet' || selectedMethod!.id == '10') {
+    if (selectedMethod!.id == 'Wallet' || selectedMethod!.id.toString() == '10') {
+      // No image required for Wallet or Paymob (ID: 10) payments
       imageData = 'wallet';
     } else {
+      // Image is required for other payment methods
       if (base64String == null) {
         showTopSnackBar(
           context,
@@ -722,17 +710,27 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       ],
       child: BlocListener<BuyPackageCubit, BuyPackageState>(
         listener: (context, state) {
-          if (state is BuyPackageSuccess) {
+          if (state is BuyPackagePaymentPendingState) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PackagePaymentWebViewScreen(
+                  paymentLink: state.paymentLink,
+                  buyPackageCubit: buyPackageCubit,
+                ),
+              ),
+            );
+          } else if (state is BuyPackageSuccess) {
             showTopSnackBar(
               context,
-              'Package "$packageName" purchased successfully!',
+              'Package "$packageName" purchase is pending!',
               AppColors.green,
             );
             Navigator.pop(context);
           } else if (state is BuyPackageError) {
             showTopSnackBar(
               context,
-              'Please select a valid method or check your wallet balance',
+              state.message ?? 'Please select a valid method or check your wallet balance',
               AppColors.red,
             );
           }
@@ -774,15 +772,20 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
               } else if (state is PaymentMethodsSuccessState) {
                 final methods = [
                   _walletPaymentMethod,
-                  PaymentMethodEntity(
-                    id: '10',
-                    payment: 'Visacard/ Mastercard',
-                    paymentType: 'integration',
-                    description: 'Pay using Paymob',
-                    logo: 'https://cdn.paymob.com/images/logos/paymob-logo.png',
-                  ),
-                  ...?state.paymentMethodsResponse.paymentMethods,
+                  ...state.paymentMethodsResponse.paymentMethods!.map((method) {
+                    if (method.id.toString() == '10') {
+                      return PaymentMethodEntity(
+                        id: method.id,
+                        payment: 'Visacard/Mastercard',
+                        paymentType: method.paymentType,
+                        description: method.description,
+                        logo: method.logo,
+                      );
+                    }
+                    return method;
+                  }).toList(),
                 ];
+
                 return Column(
                   children: [
                     _buildCompactPackageInfoCard(),
@@ -802,9 +805,15 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                         ),
                       ),
                     ),
-                    if (selectedMethod != null) ...[
-                      if (selectedMethod?.id != 'Wallet' && selectedMethod?.id != '10')
-                        _buildPaymentProofSection(),
+                    // Only show payment proof section if:
+                    // 1. A method is selected
+                    // 2. The method is NOT Wallet (ID: "Wallet")
+                    // 3. The method is NOT Paymob (ID: "10")
+                    if (selectedMethod != null &&
+                        selectedMethod!.id != 'Wallet' &&
+                        selectedMethod!.id.toString() != '10')
+                      _buildPaymentProofSection(),
+                    if (selectedMethod != null)
                       Container(
                         padding: EdgeInsets.all(isTablet ? 24.w : 16.w),
                         decoration: BoxDecoration(
@@ -818,19 +827,16 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                           ],
                         ),
                         child: ElevatedButton(
-                          onPressed: (selectedMethod != null &&
-                              (selectedMethod!.id == 'Wallet' ||
-                                  selectedMethod!.id == '10' ||
-                                  base64String != null))
-                              ? confirmPurchase
-                              : null,
+                          onPressed: confirmPurchase,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12.r),
                             ),
-                            padding: EdgeInsets.symmetric(vertical: isTablet ? 20.h : 0.h),
-                            minimumSize: Size(double.infinity, isTablet ? 56.h : 35.h),
+                            padding: EdgeInsets.symmetric(
+                              vertical: isTablet ? 20.h : 0.h,
+                            ),
+                            minimumSize: Size(double.infinity, isTablet ? 56.h : 40.h),
                           ),
                           child: Text(
                             'Confirm Purchase',
@@ -842,7 +848,6 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                           ),
                         ),
                       ),
-                    ],
                   ],
                 );
               } else {
@@ -932,3 +937,111 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
     );
   }
 }
+
+class PackagePaymentWebViewScreen extends StatefulWidget {
+  final String paymentLink;
+  final BuyPackageCubit buyPackageCubit;
+
+  const PackagePaymentWebViewScreen({
+    super.key,
+    required this.paymentLink,
+    required this.buyPackageCubit,
+  });
+
+  @override
+  State<PackagePaymentWebViewScreen> createState() => _PackagePaymentWebViewScreenState();
+}
+
+class _PackagePaymentWebViewScreenState extends State<PackagePaymentWebViewScreen> {
+  late WebViewController _controller;
+  bool _isLoading = true;
+
+  bool get isTablet => MediaQuery.of(context).size.width > 600;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (String url) {
+            developer.log('Package WebView Page Started: $url');
+            setState(() {
+              _isLoading = true;
+            });
+          },
+          onPageFinished: (String url) {
+            developer.log('Package WebView URL: $url');
+            setState(() {
+              _isLoading = false;
+            });
+            _handlePaymentResult(url);
+          },
+          onNavigationRequest: (request) {
+            developer.log('Package Navigation Request: ${request.url}');
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.paymentLink));
+  }
+
+  void _handlePaymentResult(String url) {
+    developer.log('Package WebView URL: $url');
+    if (url.contains('success=true') &&
+        url.contains('txn_response_code=APPROVED') &&
+        url.contains('error_occured=false')) {
+      Future.delayed(const Duration(milliseconds: 2000), () {
+        if (mounted) {
+          Navigator.of(context).pop();
+          widget.buyPackageCubit.handlePaymentResult(url);
+        }
+      });
+    } else if (url.contains('success=false') ||
+        url.contains('error_occured=true') ||
+        url.contains('txn_response_code=DECLINED')) {
+      Future.delayed(const Duration(milliseconds: 2000), () {
+        if (mounted) {
+          Navigator.of(context).pop();
+          widget.buyPackageCubit.handlePaymentResult(url);
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        centerTitle: true,
+        title: const Text(
+          'Complete Payment',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        foregroundColor: AppColors.primary,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: AppColors.primary),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            WebViewWidget(controller: _controller),
+            if (_isLoading)
+              Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                  strokeWidth: 6,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+  }

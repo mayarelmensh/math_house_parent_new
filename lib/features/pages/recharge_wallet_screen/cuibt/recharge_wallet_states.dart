@@ -1,6 +1,4 @@
-// wallet_recharge_states.dart
-
-import '../../../../data/models/recharge_wallet.dart';
+import 'package:math_house_parent_new/data/models/recharge_wallet.dart';
 
 abstract class WalletRechargeStates {}
 
@@ -9,9 +7,15 @@ class WalletRechargeInitialState extends WalletRechargeStates {}
 class WalletRechargeLoadingState extends WalletRechargeStates {}
 
 class WalletRechargeSuccessState extends WalletRechargeStates {
-  final WalletRechargeResponseEntity response;
+  final WalletRechargeResponseEntity walletRechargeResponse;
 
-  WalletRechargeSuccessState(this.response);
+  WalletRechargeSuccessState(this.walletRechargeResponse);
+}
+
+class WalletRechargePaymentPendingState extends WalletRechargeStates {
+  final String paymentLink;
+
+  WalletRechargePaymentPendingState(this.paymentLink);
 }
 
 class WalletRechargeErrorState extends WalletRechargeStates {

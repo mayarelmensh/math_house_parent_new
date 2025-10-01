@@ -38,6 +38,7 @@ import 'package:math_house_parent_new/features/pages/score_sheet_screen/score_sh
 import 'package:math_house_parent_new/data/models/student_selected.dart';
 import 'features/pages/my_packages_screen/cubit/my_package_cubit.dart';
 import 'features/pages/notifications_screen/notofications_screen.dart';
+import 'features/pages/packages_screen/select_buy_or_my_packages_screen.dart';
 
 // GlobalKey لـ MainScreen
 final GlobalKey<_MainScreenState> mainScreenKey = GlobalKey<_MainScreenState>();
@@ -118,6 +119,7 @@ class MyApp extends StatelessWidget {
               AppRoutes.splashScreen: (context) => SplashScreen(),
               AppRoutes.paymentsScreen: (context) => const PaymentsScreen(),
               AppRoutes.selectScreen: (context) => SelectScreen(),
+              AppRoutes.selectBuyOrMyPackagesScreen: (context) => SelectBuyOrMyPackagesScreen(),
               // AppRoutes.coursesPaymentScreen: (context) => CoursesPaymentMethodsScreen(),
             },
           ),
@@ -197,7 +199,7 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: _screens[_selectedIndex],
       bottomNavigationBar: Container(
-        margin: EdgeInsets.symmetric(horizontal: 20.w,vertical: 15.h),
+        margin: EdgeInsets.symmetric(horizontal: 20.w,vertical: 20.h),
         padding: EdgeInsets.symmetric(horizontal: 20.w),
         decoration: BoxDecoration(
           color: AppColors.white,
@@ -209,7 +211,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withOpacity(0.3),
+              color: AppColors.black.withOpacity(0.25),
               blurRadius: 10.r,
               offset: Offset(0, -2.h),
             ),

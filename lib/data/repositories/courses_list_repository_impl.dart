@@ -10,8 +10,8 @@ class CoursesListRepositoryImpl implements CoursesListRepository {
   CoursesListDataSource coursesListDataSource;
   CoursesListRepositoryImpl({required this.coursesListDataSource});
   @override
-  Future<Either<Failures, CoursesResponseEntity>> getCoursesList() async {
-    var either = await coursesListDataSource.getCoursesList();
+  Future<Either<Failures, CoursesResponseEntity>> getCoursesList(int studentId) async {
+    var either = await coursesListDataSource.getCoursesList(studentId);
     return either.fold((error) => Left(error), (response) => Right(response));
   }
 }

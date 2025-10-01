@@ -14,7 +14,7 @@ class CoursesListRemoteDataSourceImpl implements CoursesListDataSource {
   ApiManager apiManager;
   CoursesListRemoteDataSourceImpl({required this.apiManager});
   @override
-  Future<Either<Failures, CoursesResponseDm>> getCoursesList() async {
+  Future<Either<Failures, CoursesResponseDm>> getCoursesList(int studentId) async {
     try {
       final connectivityResult = await Connectivity().checkConnectivity();
       if (!(connectivityResult.contains(ConnectivityResult.wifi) ||
@@ -27,6 +27,9 @@ class CoursesListRemoteDataSourceImpl implements CoursesListDataSource {
       }
       var token = SharedPreferenceUtils.getData(key: 'token');
       final response = await apiManager.getData(
+        queryParameters: {
+          "user_id":studentId
+        },
         endPoint: EndPoints.coursesList,
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );

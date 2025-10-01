@@ -1,7 +1,7 @@
 class CoursesResponseEntity {
-  CoursesResponseEntity({this.categories, this.paymentMethods});
+  CoursesResponseEntity({this.courses, this.paymentMethods});
 
-  List<CategoriesEntity>? categories;
+  List<CourseEntity>? courses;
   List<PaymentMethodsEntity>? paymentMethods;
 }
 
@@ -25,24 +25,6 @@ class PaymentMethodsEntity {
   String? createdAt;
   String? updatedAt;
   String? logoLink;
-}
-
-class CategoriesEntity {
-  CategoriesEntity({
-    this.id,
-    this.categoryName,
-    this.categoryDescription,
-    this.categoryImage,
-    this.teacher,
-    this.course,
-  });
-
-  int? id;
-  String? categoryName;
-  String? categoryDescription;
-  String? categoryImage;
-  dynamic teacher;
-  List<CourseEntity>? course;
 }
 
 class CourseEntity {
@@ -75,7 +57,7 @@ class CourseEntity {
   String? courseName;
   String? courseDescription;
   String? courseImage;
-  dynamic teacher;
+  String? teacher; // Changed from dynamic to String? based on JSON data
   List<ChaptersEntity>? chapters;
 }
 

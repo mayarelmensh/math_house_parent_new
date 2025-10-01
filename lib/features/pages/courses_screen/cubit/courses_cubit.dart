@@ -9,9 +9,9 @@ class CoursesCubit extends Cubit<CoursesStates> {
   CoursesCubit({required this.coursesListUseCase})
     : super(CoursesInitialState());
 
-  void getCoursesList() async {
+  void getCoursesList(int studentId) async {
     emit(CoursesLoadingState());
-    final result = await coursesListUseCase.invoke();
+    final result = await coursesListUseCase.invoke(studentId);
     result.fold(
       (error) => emit(CoursesErrorState(error: error)),
       (response) => emit(CoursesSuccessState(coursesResponseEntity: response)),

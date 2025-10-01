@@ -14,7 +14,7 @@ class BuyPackageRepositoryImpl implements BuyPackageRepository {
   Future<BuyPackageEntity> buyPackage({
     required int userId,
     required dynamic paymentMethodId,
-    required String image,
+    required String? image,
     required int packageId,
   }) async {
     // هنا لازم dm يكون من نوع BuyPackageDM

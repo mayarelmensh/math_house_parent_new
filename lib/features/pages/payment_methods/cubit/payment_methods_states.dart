@@ -12,6 +12,12 @@ class PaymentMethodsSuccessState extends PaymentMethodsStates {
   PaymentMethodsSuccessState(this.paymentMethodsResponse);
 }
 
+class PaymentMethodsPaymentPendingState extends PaymentMethodsStates {
+  final String paymentLink;
+
+  PaymentMethodsPaymentPendingState(this.paymentLink);
+}
+
 class PaymentMethodsErrorState extends PaymentMethodsStates {
   final String error;
 

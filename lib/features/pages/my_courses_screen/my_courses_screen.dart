@@ -41,6 +41,9 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
+    // Always show loading initially
+    _isInitialLoading = true;
+
     // Fetch courses or show no student state
     _loadCourses();
     _animationController.forward();
@@ -57,10 +60,15 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
       context.read<MyCoursesCubit>().fetchMyCourses(SelectedStudent.studentId!);
     } else {
       print("Emitting MyCoursesError: No student selected");
-      if (mounted) {
-        context.read<MyCoursesCubit>().emit(const MyCoursesError('No student selected'));
-      }
-      _isInitialLoading = false; // No loading needed if no student
+      // Show loading for a brief moment even when no student
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          setState(() {
+            _isInitialLoading = false;
+          });
+          context.read<MyCoursesCubit>().emit(const MyCoursesError('No student selected'));
+        }
+      });
     }
   }
 
@@ -76,7 +84,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
     setState(() {
       _selectedTeacher = null;
       _searchController.clear();
-      _isInitialLoading = true; // Reset to show loading on tab switch
+      _isInitialLoading = true; // Always show loading on reset
     });
     final cubit = context.read<MyCoursesCubit>();
     cubit.filterByTeacher(null); // Sync filter reset
@@ -84,9 +92,15 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
       cubit.refreshMyCourses(SelectedStudent.studentId!);
     } else {
       print("Emitting MyCoursesError on reset: No student selected");
-      if (mounted) {
-        cubit.emit(const MyCoursesError('No student selected'));
-      }
+      // Show loading briefly before showing error
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          setState(() {
+            _isInitialLoading = false;
+          });
+          cubit.emit(const MyCoursesError('No student selected'));
+        }
+      });
     }
   }
 
@@ -102,7 +116,15 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
     return Scaffold(
       backgroundColor: AppColors.lightGray,
       appBar: CustomAppBar(title: "My Courses"),
-      body: BlocBuilder<MyCoursesCubit, MyCoursesState>(
+      body: BlocConsumer<MyCoursesCubit, MyCoursesState>(
+        listener: (context, state) {
+          // Stop showing initial loading when we get any response
+          if (_isInitialLoading && state is! MyCoursesLoading) {
+            setState(() {
+              _isInitialLoading = false;
+            });
+          }
+        },
         builder: (context, state) {
           print("MyCoursesScreen state: $state");
           return _buildBody(state);
@@ -112,17 +134,21 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
   }
 
   Widget _buildBody(MyCoursesState state) {
-    print("MyCoursesScreen state: $state");
+    print("MyCoursesScreen state: $state, _isInitialLoading: $_isInitialLoading");
+
+    // Always show loading if it's initial loading, regardless of state
+    if (_isInitialLoading) {
+      print("Showing initial loading state");
+      return _buildLoadingState();
+    }
 
     if (state is MyCoursesLoading) {
       print("Showing MyCoursesLoading state");
       return _buildLoadingState();
     } else if (state is MyCoursesError) {
       print("Showing MyCoursesError state: ${state.message}");
-      _isInitialLoading = false;
       return _buildErrorState(state.message);
     } else {
-      _isInitialLoading = false;
       List<MyCourse> courses = [];
       if (state is MyCoursesLoaded) {
         print("Showing MyCoursesLoaded state with ${state.courses.length} courses");
@@ -336,24 +362,14 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 80.w,
-            height: 80.h,
-            padding: EdgeInsets.all(20.r),
+            padding: EdgeInsets.all(isTablet ? 24.r : 20.r),
             decoration: BoxDecoration(
-              color: AppColors.white,
+              color: AppColors.primary.withOpacity(0.1),
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.black.withOpacity(0.1),
-                  blurRadius: 10.r,
-                  offset: Offset(0, 4.h),
-                ),
-              ],
             ),
             child: CircularProgressIndicator(
               color: AppColors.primary,
-              strokeWidth: 4.w,
-              backgroundColor: AppColors.grey[200],
+              strokeWidth: 3.w,
             ),
           ),
           SizedBox(height: 24.h),
@@ -423,6 +439,10 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
             SizedBox(height: 24.h),
             ElevatedButton(
               onPressed: () {
+                setState(() {
+                  _isInitialLoading = true; // Show loading again on retry
+                });
+
                 if (SelectedStudent.studentId != null) {
                   print("Retrying fetchMyCourses with studentId: ${SelectedStudent.studentId}");
                   context.read<MyCoursesCubit>().fetchMyCourses(SelectedStudent.studentId!);

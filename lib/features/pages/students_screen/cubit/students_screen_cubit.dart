@@ -13,19 +13,19 @@ class GetStudentsCubit extends Cubit<GetStudentsStates> {
   TextEditingController controller = TextEditingController();
 
   List<StudentsEntity> allStudents = [];
-  List<StudentsEntity> myStudents = [];
+  List<MyStudentsEntity> myStudents = [];
   int? selectedStudentId;
 
   GetStudentsCubit(this.getStudentsUseCase, this.sendCodeUseCase)
-    : super(GetStudentsInitialState());
+      : super(GetStudentsInitialState());
 
   /// ✅ تحميل كل الطلبة
   void getStudents() async {
     emit(GetStudentsLoadingState());
     final result = await getStudentsUseCase.getAllStudents();
     result.fold((failure) => emit(GetStudentsErrorState(error: failure)), (
-      students,
-    ) {
+        students,
+        ) {
       allStudents = students;
       emit(GetStudentsSuccessState(students: students));
     });
@@ -38,7 +38,7 @@ class GetStudentsCubit extends Cubit<GetStudentsStates> {
     } else {
       final filtered = allStudents.where((s) {
         return (s.nickName?.toLowerCase().contains(query.toLowerCase()) ??
-                false) ||
+            false) ||
             (s.email?.toLowerCase().contains(query.toLowerCase()) ?? false);
       }).toList();
       emit(GetStudentsSuccessState(students: filtered));
@@ -49,8 +49,8 @@ class GetStudentsCubit extends Cubit<GetStudentsStates> {
     emit(GetStudentsLoadingState());
     final result = await getStudentsUseCase.getMyStudents();
     result.fold((failure) => emit(GetStudentsErrorState(error: failure)), (
-      students,
-    ) {
+        students,
+        ) {
       myStudents = students;
       emit(GetMyStudents(myStudents: students));
     });

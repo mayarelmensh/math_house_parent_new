@@ -8,6 +8,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showAddIcon;
   final bool showArrowBack;
   final List<Widget>? actions;
+  final bool centerTitle;
 
   const CustomAppBar({
     super.key,
@@ -16,6 +17,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showAddIcon = false,
     this.actions,
     this.showArrowBack = true,
+    this.centerTitle=true,
   });
 
   @override
@@ -44,7 +46,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           fontWeight: FontWeight.w800,
         ),
       ),
-      centerTitle: true,
+      centerTitle:centerTitle==true? true:false,
       actions: _buildActions(),
     );
   }
