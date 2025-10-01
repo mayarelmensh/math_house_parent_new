@@ -6,22 +6,7 @@ import 'package:math_house_parent_new/core/api/end_points.dart';
 
 import '../../../../core/cache/shared_preferences_utils.dart';
 import '../../../../data/models/my_package_model.dart';
-
-abstract class MyPackageState {}
-
-class MyPackageInitial extends MyPackageState {}
-
-class MyPackageLoading extends MyPackageState {}
-
-class MyPackageLoaded extends MyPackageState {
-  final MyPackageModel package;
-  MyPackageLoaded(this.package);
-}
-
-class MyPackageError extends MyPackageState {
-  final String message;
-  MyPackageError(this.message);
-}
+import 'my_package_states.dart';
 
 @injectable
 class MyPackageCubit extends Cubit<MyPackageState> {

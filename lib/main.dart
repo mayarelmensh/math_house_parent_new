@@ -6,6 +6,7 @@ import 'package:math_house_parent_new/features/pages/courses_screen/cources_paym
 import 'package:math_house_parent_new/features/pages/courses_screen/cubit/buy_chapter_cubit.dart';
 import 'package:math_house_parent_new/features/pages/courses_screen/cubit/courses_cubit.dart';
 import 'package:math_house_parent_new/features/pages/courses_screen/select_screen.dart';
+import 'package:math_house_parent_new/features/pages/home_screen/cubit/home_screen_cubit.dart';
 import 'package:math_house_parent_new/features/pages/home_screen/tabs/home_tab/home_tab.dart';
 import 'package:math_house_parent_new/features/pages/my_courses_screen/cuibt/my_courses_cuibt.dart';
 import 'package:math_house_parent_new/features/pages/my_courses_screen/my_courses_screen.dart';
@@ -90,6 +91,7 @@ class MyApp extends StatelessWidget {
             BlocProvider(create: (_) => getIt<MyCoursesCubit>()),
             BlocProvider(create: (_) => getIt<BuyChapterCubit>()),
             BlocProvider(create: (_) => getIt<PromoCodeCubit>()),
+            BlocProvider(create: (_) => getIt<HomeScreenCubit>()),
           ],
           child: MaterialApp(
             debugShowCheckedModeBanner: false,

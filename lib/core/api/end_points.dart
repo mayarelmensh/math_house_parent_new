@@ -26,4 +26,6 @@ class EndPoints {
   static const String forgetPassword = '/parent/forget_password';
   static const String confirmPasswordCode = '/parent/confirm_code';
   static const String resetPassword = '/parent/update_password';
+  static const String studentData = '/parent/home';
+  static const String currenciesList = '/user/currencies_list';
 }

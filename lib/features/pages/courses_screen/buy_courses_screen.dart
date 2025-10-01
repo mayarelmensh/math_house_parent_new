@@ -30,6 +30,9 @@ import 'cubit/chapter_data_cubit.dart';
 import 'cubit/courses_cubit.dart';
 import 'cubit/courses_states.dart';
 import 'dart:developer' as developer;
+import '../../../data/models/currency_model.dart';
+import '../currencies_list/cubit/currencies_list_cubit.dart';
+import '../currencies_list/cubit/currencies_list_states.dart';
 
 class BuyCourseScreen extends StatefulWidget {
   final bool isLiveSession;
@@ -49,6 +52,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
   Uint8List? imageBytes;
   ChapterDataCubit chapterDataCubit = getIt<ChapterDataCubit>();
   BuyCourseCubit buyCourseCubit = getIt<BuyCourseCubit>();
+  final currenciesCubit = getIt<CurrenciesListCubit>();
   final List<int> _selectedChapterIds = [];
 
   bool get isTablet => MediaQuery.of(context).size.width > 600;
@@ -67,6 +71,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CoursesCubit>().getCoursesList(SelectedStudent.studentId);
+      currenciesCubit.getCurrenciesList();
       _animationController.forward();
     });
   }
@@ -75,6 +80,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
   void dispose() {
     _animationController.dispose();
     _searchController.dispose();
+    currenciesCubit.close();
     super.dispose();
   }
 
@@ -190,7 +196,10 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
 
   Widget _buildCoursesList(List<CourseEntity> courses) {
     return RefreshIndicator(
-      onRefresh: () async => context.read<CoursesCubit>().getCoursesList(SelectedStudent.studentId),
+      onRefresh: () async {
+        context.read<CoursesCubit>().getCoursesList(SelectedStudent.studentId);
+        currenciesCubit.getCurrenciesList();
+      },
       color: AppColors.primary,
       child: ListView.builder(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
@@ -312,7 +321,10 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
             ),
             SizedBox(height: 24.h),
             ElevatedButton(
-              onPressed: () => context.read<CoursesCubit>().getCoursesList(SelectedStudent.studentId),
+              onPressed: () {
+                context.read<CoursesCubit>().getCoursesList(SelectedStudent.studentId);
+                currenciesCubit.getCurrenciesList();
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.white,
@@ -659,6 +671,7 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
     final promoCodeCubit = getIt<PromoCodeCubit>();
 
     String? selectedPaymentMethodId = 'Wallet';
+    Currency? selectedCurrency;
     double? newPrice;
     final TextEditingController promoController = TextEditingController();
     bool isPromoExpanded = false;
@@ -669,892 +682,1325 @@ class _BuyCourseScreenState extends State<BuyCourseScreen> with TickerProviderSt
     });
 
     showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: BoxConstraints(maxWidth: isDesktop ? 600 : double.infinity),
-      enableDrag: true,
-      isDismissible: true,
-      builder: (context) => StatefulBuilder(
-        builder: (BuildContext context, StateSetter setModalState) {
-          double originalPrice = chapters == null
-              ? (course.price?.toDouble() ?? 0.0)
-              : chapters.fold(
-            0.0,
-                (sum, chapter) => sum + (chapter.chapterPrice?.toDouble() ?? 0.0),
-          );
-
-          double finalPrice = newPrice ?? originalPrice;
-
-          return DraggableScrollableSheet(
-            initialChildSize: 0.6,
-            minChildSize: 0.4,
-            maxChildSize: 0.9,
-            expand: false,
-            builder: (context, scrollController) {
-              return MultiBlocProvider(
-                providers: [
-                  BlocProvider.value(value: paymentMethodsCubit),
-                  BlocProvider.value(value: buyCourseCubit),
-                  BlocProvider.value(value: chapterDataCubit),
-                  BlocProvider.value(value: promoCodeCubit),
-                ],
-                child: MultiBlocListener(
-                  listeners: [
-                    BlocListener<BuyCourseCubit, BuyCourseStates>(
-                      listener: (context, state) {
-                        if (state is BuyCoursePaymentPendingState) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => PaymentWebViewScreen(
-                                paymentLink: state.paymentLink,
-                                buyCourseCubit: buyCourseCubit,
-                              ),
-                            ),
-                          );
-                        } else if (state is BuyCourseSuccessState) {
-                          showTopSnackBar(
-                            context,
-                            'Course purchase is pending!',
-                            AppColors.green,
-                          );
-                          Navigator.pop(context);
-                        } else if (state is BuyCourseErrorState) {
-                          showTopSnackBar(
-                            context,
-                            state.message ?? 'Something went wrong, please try again',
-                            AppColors.red,
-                          );
-                        }
-                      },
-                    ),
-                    BlocListener<BuyChapterCubit, BuyChapterStates>(
-                      listener: (context, state) {
-                        if (state is BuyChapterSuccessState) {
-                          if (state.paymentLink != null && state.paymentLink!.isNotEmpty) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ChapterPaymentWebViewScreen(
-                                  paymentLink: state.paymentLink!,
-                                  onPaymentResult: (isSuccess, errorMessage) {
-                                    if (isSuccess) {
-                                      showTopSnackBar(
-                                        context,
-                                        'Chapter${chapters!.length > 1 ? 's' : ''} purchased successfully!',
-                                        AppColors.green,
-                                      );
-                                      Navigator.pop(context);
-                                    } else {
-                                      showTopSnackBar(
-                                        context,
-                                        errorMessage ?? 'Payment failed',
-                                        AppColors.red,
-                                      );
-                                    }
-                                  },
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        constraints: BoxConstraints(maxWidth: isDesktop ? 600 : double.infinity),
+        enableDrag: true,
+        isDismissible: true,
+        builder: (context) => StatefulBuilder(
+            builder: (BuildContext context, StateSetter setModalState) {
+              return DraggableScrollableSheet(
+                initialChildSize: 0.6,
+                minChildSize: 0.4,
+                maxChildSize: 0.9,
+                expand: false,
+                builder: (context, scrollController) {
+                  return MultiBlocProvider(
+                      providers: [
+                        BlocProvider.value(value: paymentMethodsCubit),
+                        BlocProvider.value(value: buyCourseCubit),
+                        BlocProvider.value(value: chapterDataCubit),
+                        BlocProvider.value(value: promoCodeCubit),
+                        BlocProvider.value(value: currenciesCubit),
+                      ],
+                      child: MultiBlocListener(
+                      listeners: [
+                      BlocListener<BuyCourseCubit, BuyCourseStates>(
+                  listener: (context, state) {
+                    if (state is BuyCoursePaymentPendingState) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PaymentWebViewScreen(
+                            paymentLink: state.paymentLink,
+                            buyCourseCubit: buyCourseCubit,
+                          ),
+                        ),
+                      );
+                    } else if (state is BuyCourseSuccessState) {
+                      showTopSnackBar(
+                        context,
+                        'Course purchase is pending!',
+                        AppColors.green,
+                      );
+                      Navigator.pop(context);
+                    } else if (state is BuyCourseErrorState) {
+                      showTopSnackBar(
+                        context,
+                        state.message ?? 'Something went wrong, please try again',
+                        AppColors.red,
+                      );
+                    }
+                  },
+                  ),
+                      BlocListener<BuyChapterCubit, BuyChapterStates>(
+                        listener: (context, state) {
+                          if (state is BuyChapterSuccessState) {
+                            if (state.paymentLink != null && state.paymentLink!.isNotEmpty) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ChapterPaymentWebViewScreen(
+                                    paymentLink: state.paymentLink!,
+                                    onPaymentResult: (isSuccess, errorMessage) {
+                                      if (isSuccess) {
+                                        showTopSnackBar(
+                                          context,
+                                          'Chapter${chapters!.length > 1 ? 's' : ''} purchased successfully!',
+                                          AppColors.green,
+                                        );
+                                        Navigator.pop(context);
+                                      } else {
+                                        showTopSnackBar(
+                                          context,
+                                          errorMessage ?? 'Payment failed',
+                                          AppColors.red,
+                                        );
+                                      }
+                                    },
+                                  ),
                                 ),
-                              ),
-                            );
-                          } else {
+                              );
+                            } else {
+                              showTopSnackBar(
+                                context,
+                                'Chapter${chapters!.length > 1 ? 's' : ''} purchase is pending!',
+                                AppColors.green,
+                              );
+                              Navigator.pop(context);
+                            }
+                          } else if (state is BuyChapterErrorState) {
                             showTopSnackBar(
                               context,
-                              'Chapter${chapters!.length > 1 ? 's' : ''} purchase is pending!',
+                              state.error ?? 'Something went wrong, please try again',
+                              AppColors.red,
+                            );
+                          }
+                        },
+                      ),
+                      BlocListener<PromoCodeCubit, PromoCodeStates>(
+                        listener: (context, state) {
+                          if (state is PromoCodeSuccessState) {
+                            setModalState(() {
+                              newPrice = state.response.newPrice?.toDouble();
+                            });
+                            showTopSnackBar(
+                              context,
+                              'Promo code applied successfully!',
                               AppColors.green,
                             );
-                            Navigator.pop(context);
+                          } else if (state is PromoCodeErrorState) {
+                            showTopSnackBar(
+                              context,
+                              'Invalid promo code, please try again',
+                              AppColors.red,
+                            );
                           }
-                        } else if (state is BuyChapterErrorState) {
-                          showTopSnackBar(
-                            context,
-                            state.error ?? 'Something went wrong, please try again',
-                            AppColors.red,
-                          );
-                        }
-                      },
-                    ),
-                    BlocListener<PromoCodeCubit, PromoCodeStates>(
-                      listener: (context, state) {
-                        if (state is PromoCodeSuccessState) {
-                          setModalState(() {
-                            newPrice = state.response.newPrice?.toDouble();
-                          });
-                          showTopSnackBar(
-                            context,
-                            'Promo code applied successfully!',
-                            AppColors.green,
-                          );
-                        } else if (state is PromoCodeErrorState) {
-                          showTopSnackBar(
-                            context,
-                            'Invalid promo code, please try again',
-                            AppColors.red,
-                          );
-                        }
-                      },
-                    ),
-                  ],
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(20.r),
-                        topRight: Radius.circular(20.r),
+                        },
                       ),
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 40.w,
-                          height: 4.h,
-                          margin: EdgeInsets.only(top: 12.h),
+                      ],
+                  child: BlocBuilder<CurrenciesListCubit, CurrenciesStates>(
+                      bloc: currenciesCubit,
+                      builder: (context, currenciesState) {
+                        List<Currency> currencies = [];
+                        if (currenciesState is CurrenciesSuccess) {
+                          currencies = currenciesState.currencies;
+                          selectedCurrency ??= currencies.firstWhere(
+                                (c) => c.currency == 'EGP',
+                            orElse: () => currencies.first,
+                          );
+                        }
+
+                        double originalPrice = chapters == null
+                            ? (course.price?.toDouble() ?? 0.0)
+                            : chapters.fold(
+                          0.0,
+                              (sum, chapter) =>
+                          sum + (chapter.chapterPrice?.toDouble() ?? 0.0),
+                        );
+
+                        double finalPrice = newPrice ?? originalPrice;
+
+                        // حساب السعر المعروض بناءً على العملة المختارة
+                        double displayedPrice = finalPrice * (selectedCurrency
+                            ?.amount ?? 1.0);
+
+                        return Container(
                           decoration: BoxDecoration(
-                            color: AppColors.grey[300],
-                            borderRadius: BorderRadius.circular(2.r),
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.all(isTablet ? 24.w : 16.w),
-                          child: Text(
-                            'Select Payment Method',
-                            style: TextStyle(
-                              fontSize: isTablet ? 20.sp : 18.sp,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(20.r),
+                              topRight: Radius.circular(20.r),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          child: ListView(
-                            controller: scrollController,
-                            padding: EdgeInsets.symmetric(horizontal: isTablet ? 24.w : 16.w),
+                          child: Column(
                             children: [
-                              Text(
-                                chapters == null
-                                    ? 'Course: ${course.courseName ?? 'Unknown'}'
-                                    : 'Chapter${chapters.length > 1 ? 's' : ''}: ${chapters.length > 1 ? '${chapters.length} Chapters' : chapters.first.chapterName ?? 'Unknown'}',
-                                style: TextStyle(
-                                  fontSize: isTablet ? 18.sp : 16.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.grey[800],
+                              Container(
+                                width: 40.w,
+                                height: 4.h,
+                                margin: EdgeInsets.only(top: 12.h),
+                                decoration: BoxDecoration(
+                                  color: AppColors.grey[300],
+                                  borderRadius: BorderRadius.circular(2.r),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                              SizedBox(height: 12.h),
-                              if (chapters == null) ...[
-                                BlocBuilder<PromoCodeCubit, PromoCodeStates>(
-                                  builder: (context, promoState) {
-                                    return Container(
+                              Padding(
+                                padding: EdgeInsets.all(isTablet ? 24.w : 16.w),
+                                child: Text(
+                                  'Select Payment Method',
+                                  style: TextStyle(
+                                    fontSize: isTablet ? 20.sp : 18.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: ListView(
+                                  controller: scrollController,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: isTablet ? 24.w : 16.w),
+                                  children: [
+                                    Text(
+                                      chapters == null
+                                          ? 'Course: ${course.courseName ??
+                                          'Unknown'}'
+                                          : 'Chapter${chapters.length > 1
+                                          ? 's'
+                                          : ''}: ${chapters.length > 1
+                                          ? '${chapters.length} Chapters'
+                                          : chapters.first.chapterName ??
+                                          'Unknown'}',
+                                      style: TextStyle(
+                                        fontSize: isTablet ? 18.sp : 16.sp,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.grey[800],
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 12.h),
+                                    if (chapters == null) ...[
+                                      BlocBuilder<
+                                          PromoCodeCubit,
+                                          PromoCodeStates>(
+                                        builder: (context, promoState) {
+                                          return Container(
+                                            decoration: BoxDecoration(
+                                              color: AppColors.grey[50],
+                                              borderRadius: BorderRadius
+                                                  .circular(12.r),
+                                              border: Border.all(
+                                                  color: AppColors.grey[200]!),
+                                            ),
+                                            child: Column(
+                                              children: [
+                                                InkWell(
+                                                  onTap: () {
+                                                    setModalState(() {
+                                                      isPromoExpanded =
+                                                      !isPromoExpanded;
+                                                    });
+                                                  },
+                                                  child: Container(
+                                                    padding: EdgeInsets.all(
+                                                        isTablet ? 20.w : 16.w),
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.local_offer,
+                                                          color: AppColors
+                                                              .primary,
+                                                          size: isTablet
+                                                              ? 24.sp
+                                                              : 20.sp,
+                                                        ),
+                                                        SizedBox(width: 12.w),
+                                                        Text(
+                                                          'Promo Code',
+                                                          style: TextStyle(
+                                                            fontSize: isTablet
+                                                                ? 18.sp
+                                                                : 16.sp,
+                                                            fontWeight: FontWeight
+                                                                .w600,
+                                                            color: AppColors
+                                                                .primary,
+                                                          ),
+                                                        ),
+                                                        Spacer(),
+                                                        if (newPrice != null)
+                                                          Text(
+                                                            'Applied',
+                                                            style: TextStyle(
+                                                              fontSize: isTablet
+                                                                  ? 14.sp
+                                                                  : 12.sp,
+                                                              color: AppColors
+                                                                  .green,
+                                                              fontWeight: FontWeight
+                                                                  .w500,
+                                                            ),
+                                                          ),
+                                                        SizedBox(width: 8.w),
+                                                        Icon(
+                                                          isPromoExpanded
+                                                              ? Icons
+                                                              .keyboard_arrow_up
+                                                              : Icons
+                                                              .keyboard_arrow_down,
+                                                          color: AppColors
+                                                              .grey[600],
+                                                          size: isTablet
+                                                              ? 24.sp
+                                                              : 20.sp,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                                if (isPromoExpanded)
+                                                  Container(
+                                                    padding: EdgeInsets
+                                                        .fromLTRB(
+                                                      isTablet ? 20.w : 16.w,
+                                                      0,
+                                                      isTablet ? 20.w : 16.w,
+                                                      isTablet ? 20.h : 16.h,
+                                                    ),
+                                                    child: Column(
+                                                      children: [
+                                                        Row(
+                                                          children: [
+                                                            Expanded(
+                                                              child: TextField(
+                                                                controller: promoController,
+                                                                keyboardType: TextInputType
+                                                                    .number,
+                                                                inputFormatters: [
+                                                                  FilteringTextInputFormatter
+                                                                      .digitsOnly,
+                                                                ],
+                                                                decoration: InputDecoration(
+                                                                  hintText: 'Enter promo code',
+                                                                  border: OutlineInputBorder(
+                                                                    borderRadius: BorderRadius
+                                                                        .circular(
+                                                                        8.r),
+                                                                    borderSide: BorderSide(
+                                                                        color: AppColors
+                                                                            .grey[300]!),
+                                                                  ),
+                                                                  focusedBorder: OutlineInputBorder(
+                                                                    borderRadius: BorderRadius
+                                                                        .circular(
+                                                                        8.r),
+                                                                    borderSide: BorderSide(
+                                                                        color: AppColors
+                                                                            .primary),
+                                                                  ),
+                                                                  contentPadding: EdgeInsets
+                                                                      .symmetric(
+                                                                    horizontal: isTablet
+                                                                        ? 16.w
+                                                                        : 12.w,
+                                                                    vertical: isTablet
+                                                                        ? 16.h
+                                                                        : 12.h,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            SizedBox(
+                                                                width: 8.w),
+                                                            ElevatedButton(
+                                                              onPressed: promoState is PromoCodeLoadingState
+                                                                  ? null
+                                                                  : () {
+                                                                if (promoController
+                                                                    .text
+                                                                    .isEmpty) {
+                                                                  ScaffoldMessenger
+                                                                      .of(
+                                                                      context)
+                                                                      .showSnackBar(
+                                                                    const SnackBar(
+                                                                      content: Text(
+                                                                          'Please enter a promo code'),
+                                                                      backgroundColor: Colors
+                                                                          .red,
+                                                                    ),
+                                                                  );
+                                                                  return;
+                                                                }
+                                                                final promoCode = int
+                                                                    .tryParse(
+                                                                    promoController
+                                                                        .text);
+                                                                if (promoCode ==
+                                                                    null) {
+                                                                  ScaffoldMessenger
+                                                                      .of(
+                                                                      context)
+                                                                      .showSnackBar(
+                                                                    const SnackBar(
+                                                                      content: Text(
+                                                                          'Please enter a valid promo code'),
+                                                                      backgroundColor: Colors
+                                                                          .red,
+                                                                    ),
+                                                                  );
+                                                                  return;
+                                                                }
+                                                                promoCodeCubit
+                                                                    .applyPromoCode(
+                                                                  promoCode: promoCode,
+                                                                  courseId: course
+                                                                      .id ?? 0,
+                                                                  userId: SelectedStudent
+                                                                      .studentId,
+                                                                  originalAmount: originalPrice,
+                                                                );
+                                                              },
+                                                              style: ElevatedButton
+                                                                  .styleFrom(
+                                                                backgroundColor: AppColors
+                                                                    .primary,
+                                                                shape: RoundedRectangleBorder(
+                                                                  borderRadius: BorderRadius
+                                                                      .circular(
+                                                                      8.r),
+                                                                ),
+                                                                padding: EdgeInsets
+                                                                    .symmetric(
+                                                                  horizontal: isTablet
+                                                                      ? 20.w
+                                                                      : 16.w,
+                                                                  vertical: isTablet
+                                                                      ? 16.h
+                                                                      : 12.h,
+                                                                ),
+                                                              ),
+                                                              child: promoState is PromoCodeLoadingState
+                                                                  ? SizedBox(
+                                                                width: isTablet
+                                                                    ? 24.w
+                                                                    : 20.w,
+                                                                height: isTablet
+                                                                    ? 24.h
+                                                                    : 20.h,
+                                                                child: CircularProgressIndicator(
+                                                                  color: AppColors
+                                                                      .white,
+                                                                  strokeWidth: 2,
+                                                                ),
+                                                              )
+                                                                  : Text(
+                                                                'Apply',
+                                                                style: TextStyle(
+                                                                  color: AppColors
+                                                                      .white,
+                                                                  fontSize: isTablet
+                                                                      ? 16.sp
+                                                                      : 14.sp,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        if (newPrice !=
+                                                            null) ...[
+                                                          SizedBox(
+                                                              height: 12.h),
+                                                          Container(
+                                                            padding: EdgeInsets
+                                                                .all(isTablet
+                                                                ? 16.w
+                                                                : 12.w),
+                                                            decoration: BoxDecoration(
+                                                              color: AppColors
+                                                                  .green
+                                                                  .withOpacity(
+                                                                  0.1),
+                                                              borderRadius: BorderRadius
+                                                                  .circular(
+                                                                  8.r),
+                                                              border: Border
+                                                                  .all(
+                                                                  color: AppColors
+                                                                      .green
+                                                                      .withOpacity(
+                                                                      0.3)),
+                                                            ),
+                                                            child: Row(
+                                                              children: [
+                                                                Icon(
+                                                                  Icons
+                                                                      .check_circle,
+                                                                  color: AppColors
+                                                                      .green,
+                                                                  size: isTablet
+                                                                      ? 20.sp
+                                                                      : 16.sp,
+                                                                ),
+                                                                SizedBox(
+                                                                    width: 8.w),
+                                                                Expanded(
+                                                                  child: Text(
+                                                                    'Promo code applied! You save ${(originalPrice -
+                                                                        newPrice!)
+                                                                        .toStringAsFixed(
+                                                                        0)}',
+                                                                    style: TextStyle(
+                                                                      fontSize: isTablet
+                                                                          ? 14
+                                                                          .sp
+                                                                          : 12
+                                                                          .sp,
+                                                                      color: AppColors
+                                                                          .green,
+                                                                      fontWeight: FontWeight
+                                                                          .w500,
+                                                                    ),
+                                                                    maxLines: 2,
+                                                                    overflow: TextOverflow
+                                                                        .ellipsis,
+                                                                  ),
+                                                                ),
+                                                                IconButton(
+                                                                  onPressed: () {
+                                                                    setModalState(() {
+                                                                      newPrice =
+                                                                      null;
+                                                                      promoController
+                                                                          .clear();
+                                                                    });
+                                                                  },
+                                                                  icon: Icon(
+                                                                    Icons.close,
+                                                                    size: isTablet
+                                                                        ? 20.sp
+                                                                        : 16.sp,
+                                                                    color: AppColors
+                                                                        .red,
+                                                                  ),
+                                                                  padding: EdgeInsets
+                                                                      .zero,
+                                                                  constraints: BoxConstraints(
+                                                                    minWidth: isTablet
+                                                                        ? 28.w
+                                                                        : 24.w,
+                                                                    minHeight: isTablet
+                                                                        ? 28.h
+                                                                        : 24.h,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ],
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      SizedBox(height: 12.h),
+                                    ],
+                                    Container(
+                                      padding: EdgeInsets.all(
+                                          isTablet ? 20.w : 16.w),
                                       decoration: BoxDecoration(
-                                        color: AppColors.grey[50],
-                                        borderRadius: BorderRadius.circular(12.r),
-                                        border: Border.all(color: AppColors.grey[200]!),
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            AppColors.primary.withOpacity(0.1),
+                                            AppColors.primary.withOpacity(0.05),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                            12.r),
+                                        border: Border.all(
+                                            color: AppColors.primary
+                                                .withOpacity(0.3)),
                                       ),
                                       child: Column(
                                         children: [
-                                          InkWell(
-                                            onTap: () {
-                                              setModalState(() {
-                                                isPromoExpanded = !isPromoExpanded;
-                                              });
-                                            },
-                                            child: Container(
-                                              padding: EdgeInsets.all(isTablet ? 20.w : 16.w),
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.local_offer,
-                                                    color: AppColors.primary,
-                                                    size: isTablet ? 24.sp : 20.sp,
-                                                  ),
-                                                  SizedBox(width: 12.w),
-                                                  Text(
-                                                    'Promo Code',
-                                                    style: TextStyle(
-                                                      fontSize: isTablet ? 18.sp : 16.sp,
-                                                      fontWeight: FontWeight.w600,
-                                                      color: AppColors.primary,
-                                                    ),
-                                                  ),
-                                                  Spacer(),
-                                                  if (newPrice != null)
-                                                    Text(
-                                                      'Applied',
-                                                      style: TextStyle(
-                                                        fontSize: isTablet ? 14.sp : 12.sp,
-                                                        color: AppColors.green,
-                                                        fontWeight: FontWeight.w500,
-                                                      ),
-                                                    ),
-                                                  SizedBox(width: 8.w),
-                                                  Icon(
-                                                    isPromoExpanded
-                                                        ? Icons.keyboard_arrow_up
-                                                        : Icons.keyboard_arrow_down,
+                                          if (newPrice != null &&
+                                              newPrice != originalPrice) ...[
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment
+                                                  .spaceBetween,
+                                              children: [
+                                                Text(
+                                                  'Original Price:',
+                                                  style: TextStyle(
+                                                    fontSize: isTablet
+                                                        ? 16.sp
+                                                        : 14.sp,
                                                     color: AppColors.grey[600],
-                                                    size: isTablet ? 24.sp : 20.sp,
+                                                    decoration: TextDecoration
+                                                        .lineThrough,
                                                   ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                          if (isPromoExpanded)
-                                            Container(
-                                              padding: EdgeInsets.fromLTRB(
-                                                isTablet ? 20.w : 16.w,
-                                                0,
-                                                isTablet ? 20.w : 16.w,
-                                                isTablet ? 20.h : 16.h,
-                                              ),
-                                              child: Column(
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      Expanded(
-                                                        child: TextField(
-                                                          controller: promoController,
-                                                          keyboardType: TextInputType.number,
-                                                          inputFormatters: [
-                                                            FilteringTextInputFormatter.digitsOnly,
-                                                          ],
-                                                          decoration: InputDecoration(
-                                                            hintText: 'Enter promo code',
-                                                            border: OutlineInputBorder(
-                                                              borderRadius: BorderRadius.circular(8.r),
-                                                              borderSide: BorderSide(color: AppColors.grey[300]!),
-                                                            ),
-                                                            focusedBorder: OutlineInputBorder(
-                                                              borderRadius: BorderRadius.circular(8.r),
-                                                              borderSide: BorderSide(color: AppColors.primary),
-                                                            ),
-                                                            contentPadding: EdgeInsets.symmetric(
-                                                              horizontal: isTablet ? 16.w : 12.w,
-                                                              vertical: isTablet ? 16.h : 12.h,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      SizedBox(width: 8.w),
-                                                      ElevatedButton(
-                                                        onPressed: promoState is PromoCodeLoadingState
-                                                            ? null
-                                                            : () {
-                                                          if (promoController.text.isEmpty) {
-                                                            ScaffoldMessenger.of(context).showSnackBar(
-                                                              const SnackBar(
-                                                                content: Text('Please enter a promo code'),
-                                                                backgroundColor: Colors.red,
-                                                              ),
-                                                            );
-                                                            return;
-                                                          }
-                                                          final promoCode = int.tryParse(promoController.text);
-                                                          if (promoCode == null) {
-                                                            ScaffoldMessenger.of(context).showSnackBar(
-                                                              const SnackBar(
-                                                                content: Text('Please enter a valid promo code'),
-                                                                backgroundColor: Colors.red,
-                                                              ),
-                                                            );
-                                                            return;
-                                                          }
-                                                          promoCodeCubit.applyPromoCode(
-                                                            promoCode: promoCode,
-                                                            courseId: course.id ?? 0,
-                                                            userId: SelectedStudent.studentId,
-                                                            originalAmount: originalPrice,
-                                                          );
-                                                        },
-                                                        style: ElevatedButton.styleFrom(
-                                                          backgroundColor: AppColors.primary,
-                                                          shape: RoundedRectangleBorder(
-                                                            borderRadius: BorderRadius.circular(8.r),
-                                                          ),
-                                                          padding: EdgeInsets.symmetric(
-                                                            horizontal: isTablet ? 20.w : 16.w,
-                                                            vertical: isTablet ? 16.h : 12.h,
-                                                          ),
-                                                        ),
-                                                        child: promoState is PromoCodeLoadingState
-                                                            ? SizedBox(
-                                                          width: isTablet ? 24.w : 20.w,
-                                                          height: isTablet ? 24.h : 20.h,
-                                                          child: CircularProgressIndicator(
-                                                            color: AppColors.white,
-                                                            strokeWidth: 2,
-                                                          ),
-                                                        )
-                                                            : Text(
-                                                          'Apply',
-                                                          style: TextStyle(
-                                                            color: AppColors.white,
-                                                            fontSize: isTablet ? 16.sp : 14.sp,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
+                                                ),
+                                                Text(
+                                                  '${originalPrice
+                                                      .toStringAsFixed(2)} ',
+                                                  style: TextStyle(
+                                                    fontSize: isTablet
+                                                        ? 16.sp
+                                                        : 14.sp,
+                                                    color: AppColors.grey[600],
+                                                    decoration: TextDecoration
+                                                        .lineThrough,
                                                   ),
-                                                  if (newPrice != null) ...[
-                                                    SizedBox(height: 12.h),
-                                                    Container(
-                                                      padding: EdgeInsets.all(isTablet ? 16.w : 12.w),
-                                                      decoration: BoxDecoration(
-                                                        color: AppColors.green.withOpacity(0.1),
-                                                        borderRadius: BorderRadius.circular(8.r),
-                                                        border: Border.all(color: AppColors.green.withOpacity(0.3)),
-                                                      ),
-                                                      child: Row(
-                                                        children: [
-                                                          Icon(
-                                                            Icons.check_circle,
-                                                            color: AppColors.green,
-                                                            size: isTablet ? 20.sp : 16.sp,
-                                                          ),
-                                                          SizedBox(width: 8.w),
-                                                          Expanded(
-                                                            child: Text(
-                                                              'Promo code applied! You save ${(originalPrice - newPrice!).toStringAsFixed(0)}'
-                                                              ,
-                                                              style: TextStyle(
-                                                                fontSize: isTablet ? 14.sp : 12.sp,
-                                                                color: AppColors.green,
-                                                                fontWeight: FontWeight.w500,
-                                                              ),
-                                                              maxLines: 2,
-                                                              overflow: TextOverflow.ellipsis,
-                                                            ),
-                                                          ),
-                                                          IconButton(
-                                                            onPressed: () {
-                                                              setModalState(() {
-                                                                newPrice = null;
-                                                                promoController.clear();
-                                                              });
-                                                            },
-                                                            icon: Icon(
-                                                              Icons.close,
-                                                              size: isTablet ? 20.sp : 16.sp,
-                                                              color: AppColors.red,
-                                                            ),
-                                                            padding: EdgeInsets.zero,
-                                                            constraints: BoxConstraints(
-                                                              minWidth: isTablet ? 28.w : 24.w,
-                                                              minHeight: isTablet ? 28.h : 24.h,
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ],
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                                SizedBox(height: 12.h),
-                              ],
-                              Container(
-                                padding: EdgeInsets.all(isTablet ? 20.w : 16.w),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      AppColors.primary.withOpacity(0.1),
-                                      AppColors.primary.withOpacity(0.05),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12.r),
-                                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                                ),
-                                child: Column(
-                                  children: [
-                                    if (newPrice != null && newPrice != originalPrice) ...[
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            'Original Price:',
-                                            style: TextStyle(
-                                              fontSize: isTablet ? 16.sp : 14.sp,
-                                              color: AppColors.grey[600],
-                                              decoration: TextDecoration.lineThrough,
-                                            ),
-                                          ),
-                                          Text(
-                                            '${originalPrice.toStringAsFixed(2)} ',
-                                            style: TextStyle(
-                                              fontSize: isTablet ? 16.sp : 14.sp,
-                                              color: AppColors.grey[600],
-                                              decoration: TextDecoration.lineThrough,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      SizedBox(height: 8.h),
-                                    ],
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Final Price:',
-                                          style: TextStyle(
-                                            fontSize: isTablet ? 18.sp : 16.sp,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.grey[800],
-                                          ),
-                                        ),
-                                        Text(
-                                          '${finalPrice.toStringAsFixed(2)}',
-                                          style: TextStyle(
-                                            fontSize: isTablet ? 20.sp : 18.sp,
-                                            fontWeight: FontWeight.bold,
-                                            color: newPrice != null ? AppColors.green : AppColors.primary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: 12.h),
-                              Text(
-                                'Duration: ${chapters == null ? (course.allPrices?.isNotEmpty == true ? course.allPrices!.first.duration ?? 30 : 30) : (chapters.first.chapterAllPrices?.isNotEmpty == true ? chapters.first.chapterAllPrices!.first.duration ?? 30 : 30)} days',
-                                style: TextStyle(
-                                  fontSize: isTablet ? 16.sp : 14.sp,
-                                  color: AppColors.grey[700],
-                                ),
-                              ),
-                              if (selectedPaymentMethodId != 'Wallet' && selectedPaymentMethodId != '10') ...[
-                                SizedBox(height: 16.h),
-                                if (imageBytes != null)
-                                  Container(
-                                    width: double.infinity,
-                                    height: isTablet ? 200.h : 150.h,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12.r),
-                                      color: Colors.grey[200],
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(12.r),
-                                      child: Image.memory(
-                                        imageBytes!,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  Container(
-                                    width: double.infinity,
-                                    height: isTablet ? 200.h : 150.h,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12.r),
-                                      color: Colors.grey[200],
-                                    ),
-                                    child: Icon(
-                                      Icons.image,
-                                      size: isTablet ? 48.sp : 40.sp,
-                                    ),
-                                  ),
-                                SizedBox(height: 8.h),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: ElevatedButton.icon(
-                                        onPressed: () => _showImageSourceBottomSheet(context, setModalState),
-                                        icon: Icon(Icons.upload_file, color: AppColors.white),
-                                        label: Text(
-                                          'Upload Invoice Image',
-                                          style: TextStyle(
-                                            color: AppColors.white,
-                                            fontSize: isTablet ? 16.sp : 14.sp,
-                                          ),
-                                        ),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.primary,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12.r),
-                                          ),
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: isTablet ? 28.w : 24.w,
-                                            vertical: isTablet ? 16.h : 12.h,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    if (imageBytes != null) ...[
-                                      SizedBox(width: 8.w),
-                                      IconButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            imageBytes = null;
-                                            base64String = null;
-                                          });
-                                          setModalState(() {});
-                                        },
-                                        icon: Icon(
-                                          Icons.delete,
-                                          color: Colors.red,
-                                          size: isTablet ? 28.sp : 24.sp,
-                                        ),
-                                        style: IconButton.styleFrom(
-                                          backgroundColor: Colors.red.withOpacity(0.1),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8.r),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                SizedBox(height: 16.h),
-                              ],
-                              BlocBuilder<PaymentMethodsCubit, PaymentMethodsStates>(
-                                bloc: paymentMethodsCubit,
-                                builder: (context, state) {
-                                  if (state is PaymentMethodsLoadingState) {
-                                    return Center(
-                                      child: CircularProgressIndicator(color: AppColors.primary),
-                                    );
-                                  } else if (state is PaymentMethodsSuccessState) {
-                                    final methods = [
-                                      PaymentMethodDm(
-                                        id: 'Wallet',
-                                        payment: 'Wallet',
-                                        paymentType: 'Wallet',
-                                        description: 'Pay using your wallet balance',
-                                        logo: '',
-                                      ),
-                                      ...state.paymentMethodsResponse.paymentMethods!.map((method) {
-                                        // If the method ID is '10', override the payment name
-                                        if (method.id.toString() == '10') {
-                                          return PaymentMethodDm(
-                                            id: method.id,
-                                            payment: 'Visacard/Mastercard', // Ensure the name is always Visacard/Mastercard
-                                            paymentType: method.paymentType,
-                                            description: method.description,
-                                            logo: method.logo,
-                                          );
-                                        }
-                                        return method;
-                                      }).toList(),
-                                    ];
-                                    return Column(
-                                      children: methods.map((method) {
-                                        final isSelected = selectedPaymentMethodId == method.id.toString();
-                                        return GestureDetector(
-                                          onTap: () {
-                                            setModalState(() {
-                                              selectedPaymentMethodId = method.id.toString();
-                                            });
-                                          },
-                                          child: Container(
-                                            margin: EdgeInsets.only(bottom: 16.h),
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                colors: isSelected
-                                                    ? [
-                                                  AppColors.primary.withOpacity(0.3),
-                                                  AppColors.primary.withOpacity(0.1),
-                                                ]
-                                                    : [
-                                                  AppColors.white,
-                                                  AppColors.lightGray,
-                                                ],
-                                                begin: Alignment.topLeft,
-                                                end: Alignment.bottomRight,
-                                              ),
-                                              borderRadius: BorderRadius.circular(16.r),
-                                              border: Border.all(
-                                                color: isSelected ? AppColors.primary : AppColors.grey[300]!,
-                                                width: isSelected ? 3.w : 1.w,
-                                              ),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: AppColors.grey.withOpacity(isSelected ? 0.3 : 0.15),
-                                                  spreadRadius: 1,
-                                                  blurRadius: 8,
-                                                  offset: Offset(0, 3.h),
                                                 ),
                                               ],
                                             ),
-                                            child: Container(
-                                              padding: EdgeInsets.all(isTablet ? 24.w : 20.w),
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      Container(
-                                                        width: isTablet ? 70.w : 60.w,
-                                                        height: isTablet ? 70.h : 60.h,
-                                                        decoration: BoxDecoration(
-                                                          borderRadius: BorderRadius.circular(12.r),
-                                                          color: AppColors.lightGray,
-                                                        ),
-                                                        child: method.logo != null && method.logo!.isNotEmpty
-                                                            ? ClipRRect(
-                                                          borderRadius: BorderRadius.circular(12.r),
-                                                          child: Image.network(
-                                                            method.logo!,
-                                                            fit: BoxFit.cover,
-                                                            errorBuilder: (context, _, __) => Icon(
-                                                              Icons.payment,
-                                                              color: AppColors.primary,
-                                                              size: isTablet ? 32.sp : 28.sp,
-                                                            ),
-                                                          ),
-                                                        )
-                                                            : Icon(
-                                                          method.paymentType?.toLowerCase() == 'wallet'
-                                                              ? Icons.account_balance_wallet
-                                                              : Icons.payment,
-                                                          color: AppColors.primary,
-                                                          size: isTablet ? 32.sp : 28.sp,
-                                                        ),
-                                                      ),
-                                                      SizedBox(width: 16.w),
-                                                      Expanded(
-                                                        child: Column(
-                                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                                          children: [
-                                                            Text(
-                                                              method.payment ?? "Unknown Payment",
-                                                              style: TextStyle(
-                                                                fontSize: isTablet ? 20.sp : 18.sp,
-                                                                fontWeight: FontWeight.bold,
-                                                                color: isSelected ? AppColors.primary : AppColors.darkGray,
-                                                              ),
-                                                              maxLines: 1,
-                                                              overflow: TextOverflow.ellipsis,
-                                                            ),
-                                                            SizedBox(height: 4.h),
-                                                            Container(
-                                                              padding: EdgeInsets.symmetric(
-                                                                horizontal: 12.w,
-                                                                vertical: 4.h,
-                                                              ),
-                                                              decoration: BoxDecoration(
-                                                                color: _getPaymentTypeColor(method.paymentType),
-                                                                borderRadius: BorderRadius.circular(12.r),
-                                                              ),
-                                                              child: Text(
-                                                                _getPaymentTypeText(method.paymentType),
-                                                                style: TextStyle(
-                                                                  color: AppColors.white,
-                                                                  fontSize: isTablet ? 14.sp : 12.sp,
-                                                                  fontWeight: FontWeight.w600,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      if (isSelected)
-                                                        Icon(
-                                                          Icons.check_circle,
-                                                          color: AppColors.primary,
-                                                          size: isTablet ? 28.sp : 24.sp,
-                                                        ),
-                                                    ],
-                                                  ),
-                                                  if (method.description != null &&
-                                                      method.description!.isNotEmpty &&
-                                                      method.id.toString() != '10') ...[
-                                                    SizedBox(height: 12.h),
-                                                    InkWell(
-                                                      onTap: () => _handlePaymentDescription(method.description!),
-                                                      child: Container(
-                                                        padding: EdgeInsets.all(isTablet ? 16.w : 12.w),
-                                                        decoration: BoxDecoration(
-                                                          color: AppColors.primary.withOpacity(0.1),
-                                                          borderRadius: BorderRadius.circular(8.r),
-                                                          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                                                        ),
-                                                        child: Row(
-                                                          children: [
-                                                            Icon(
-                                                              _isUrl(method.description!) ? Icons.link : Icons.content_copy,
-                                                              color: AppColors.primary,
-                                                              size: isTablet ? 20.sp : 16.sp,
-                                                            ),
-                                                            SizedBox(width: 8.w),
-                                                            Expanded(
-                                                              child: Text(
-                                                                method.description!,
-                                                                style: TextStyle(
-                                                                  fontSize: isTablet ? 16.sp : 14.sp,
-                                                                  color: AppColors.primary,
-                                                                  fontWeight: FontWeight.w500,
-                                                                ),
-                                                                maxLines: 2,
-                                                                overflow: TextOverflow.ellipsis,
-                                                              ),
-                                                            ),
-                                                            Icon(
-                                                              Icons.touch_app,
-                                                              color: AppColors.primary,
-                                                              size: isTablet ? 20.sp : 16.sp,
-                                                            ),
-                                                          ],
-                                                        ),
+                                            SizedBox(height: 8.h),
+                                          ],
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment
+                                                .spaceBetween,
+                                            children: [
+                                              Text(
+                                                'Final Price:',
+                                                style: TextStyle(
+                                                  fontSize: isTablet
+                                                      ? 18.sp
+                                                      : 16.sp,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppColors.grey[800],
+                                                ),
+                                              ),
+                                              if (currencies.isNotEmpty)
+                                                Row(
+                                                  children: [
+                                                    Text(
+                                                      '${displayedPrice
+                                                          .toStringAsFixed(2)}',
+                                                      style: TextStyle(
+                                                        fontSize: isTablet ? 20
+                                                            .sp : 18.sp,
+                                                        fontWeight: FontWeight
+                                                            .bold,
+                                                        color: newPrice != null
+                                                            ? AppColors.green
+                                                            : AppColors.primary,
                                                       ),
                                                     ),
-                                                  ] else if (method.id.toString() == '10') ...[
-                                                    SizedBox(height: 12.h),
-                                                    Container(
-                                                      padding: EdgeInsets.all(isTablet ? 16.w : 12.w),
-                                                      decoration: BoxDecoration(
-                                                        color: AppColors.primary.withOpacity(0.1),
-                                                        borderRadius: BorderRadius.circular(8.r),
-                                                        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                                                      ),
-                                                      child: Row(
-                                                        children: [
-                                                          Icon(
-                                                            Icons.info_outline,
-                                                            color: AppColors.primary,
-                                                            size: isTablet ? 20.sp : 16.sp,
-                                                          ),
-                                                          SizedBox(width: 8.w),
-                                                          Expanded(
-                                                            child: Text(
-                                                              'Press "Confirm Purchase" to proceed with the payment link',
-                                                              style: TextStyle(
-                                                                fontSize: isTablet ? 16.sp : 14.sp,
-                                                                color: AppColors.primary,
-                                                                fontWeight: FontWeight.w500,
-                                                              ),
-                                                              maxLines: 2,
-                                                              overflow: TextOverflow.ellipsis,
+                                                    SizedBox(width: 8.w),
+                                                    DropdownButton<Currency>(
+                                                      value: selectedCurrency,
+                                                      icon: Icon(
+                                                          Icons.arrow_drop_down,
+                                                          color: AppColors
+                                                              .primary),
+                                                      underline: SizedBox(),
+                                                      onChanged: (
+                                                          Currency? newValue) {
+                                                        if (newValue != null) {
+                                                          setModalState(() {
+                                                            selectedCurrency =
+                                                                newValue;
+                                                          });
+                                                        }
+                                                      },
+                                                      items: currencies.map<
+                                                          DropdownMenuItem<
+                                                              Currency>>((
+                                                          Currency currency) {
+                                                        return DropdownMenuItem<
+                                                            Currency>(
+                                                          value: currency,
+                                                          child: Text(
+                                                            currency.currency,
+                                                            style: TextStyle(
+                                                              fontSize: isTablet
+                                                                  ? 18.sp
+                                                                  : 16.sp,
+                                                              color: AppColors
+                                                                  .grey[800],
                                                             ),
                                                           ),
-                                                        ],
-                                                      ),
+                                                        );
+                                                      }).toList(),
                                                     ),
                                                   ],
-                                                ],
+                                                )
+                                              else
+                                                Text(
+                                                  '${finalPrice.toStringAsFixed(
+                                                      2)} ',
+                                                  style: TextStyle(
+                                                    fontSize: isTablet
+                                                        ? 20.sp
+                                                        : 18.sp,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: newPrice != null
+                                                        ? AppColors.green
+                                                        : AppColors.primary,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(height: 12.h),
+                                    Text(
+                                      'Duration: ${chapters == null ? (course
+                                          .allPrices?.isNotEmpty == true
+                                          ? course.allPrices!.first.duration ??
+                                          30
+                                          : 30) : (chapters.first
+                                          .chapterAllPrices?.isNotEmpty == true
+                                          ? chapters.first.chapterAllPrices!
+                                          .first.duration ?? 30
+                                          : 30)} days',
+                                      style: TextStyle(
+                                        fontSize: isTablet ? 16.sp : 14.sp,
+                                        color: AppColors.grey[700],
+                                      ),
+                                    ),
+                                    if (selectedPaymentMethodId != 'Wallet' &&
+                                        selectedPaymentMethodId != '10') ...[
+                                      SizedBox(height: 16.h),
+                                      if (imageBytes != null)
+                                        Container(
+                                          width: double.infinity,
+                                          height: isTablet ? 200.h : 150.h,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                                12.r),
+                                            color: Colors.grey[200],
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                                12.r),
+                                            child: Image.memory(
+                                              imageBytes!,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        Container(
+                                          width: double.infinity,
+                                          height: isTablet ? 200.h : 150.h,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                                12.r),
+                                            color: Colors.grey[200],
+                                          ),
+                                          child: Icon(
+                                            Icons.image,
+                                            size: isTablet ? 48.sp : 40.sp,
+                                          ),
+                                        ),
+                                      SizedBox(height: 8.h),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: ElevatedButton.icon(
+                                              onPressed: () =>
+                                                  _showImageSourceBottomSheet(
+                                                      context, setModalState),
+                                              icon: Icon(Icons.upload_file,
+                                                  color: AppColors.white),
+                                              label: Text(
+                                                'Upload Invoice Image',
+                                                style: TextStyle(
+                                                  color: AppColors.white,
+                                                  fontSize: isTablet
+                                                      ? 16.sp
+                                                      : 14.sp,
+                                                ),
+                                              ),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: AppColors
+                                                    .primary,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius
+                                                      .circular(12.r),
+                                                ),
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: isTablet
+                                                      ? 28.w
+                                                      : 24.w,
+                                                  vertical: isTablet ? 16.h : 12
+                                                      .h,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        );
-                                      }).toList(),
-                                    );
-                                  } else if (state is PaymentMethodsErrorState) {
-                                    return Center(
-                                      child: Text(
-                                        'Something went wrong, please try again',
-                                        style: TextStyle(
-                                          fontSize: isTablet ? 18.sp : 16.sp,
-                                          color: AppColors.grey[600],
-                                        ),
+                                          if (imageBytes != null) ...[
+                                            SizedBox(width: 8.w),
+                                            IconButton(
+                                              onPressed: () {
+                                                setState(() {
+                                                  imageBytes = null;
+                                                  base64String = null;
+                                                });
+                                                setModalState(() {});
+                                              },
+                                              icon: Icon(
+                                                Icons.delete,
+                                                color: Colors.red,
+                                                size: isTablet ? 28.sp : 24.sp,
+                                              ),
+                                              style: IconButton.styleFrom(
+                                                backgroundColor: Colors.red
+                                                    .withOpacity(0.1),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius
+                                                      .circular(8.r),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
-                                    );
-                                  } else {
-                                    return const SizedBox.shrink();
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: EdgeInsets.all(isTablet ? 24.w : 16.w),
-                          decoration: BoxDecoration(
-                            color: AppColors.white,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.grey.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, -2),
-                              ),
-                            ],
-                          ),
-                          child: ElevatedButton(
-                            onPressed: (selectedPaymentMethodId != null &&
-                                (selectedPaymentMethodId == 'Wallet' ||
-                                    selectedPaymentMethodId == '10' ||
-                                    base64String != null))
-                                ? () async {
-                              String imageData;
-                              if (selectedPaymentMethodId == 'Wallet' || selectedPaymentMethodId == '10') {
-                                imageData = 'wallet';
-                              } else {
-                                if (base64String == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Please upload the invoice image'),
-                                      backgroundColor: Colors.red,
+                                      SizedBox(height: 16.h),
+                                    ],
+                                    BlocBuilder<
+                                        PaymentMethodsCubit,
+                                        PaymentMethodsStates>(
+                                      bloc: paymentMethodsCubit,
+                                      builder: (context, state) {
+                                        if (state is PaymentMethodsLoadingState) {
+                                          return Center(
+                                            child: CircularProgressIndicator(
+                                                color: AppColors.primary),
+                                          );
+                                        } else
+                                        if (state is PaymentMethodsSuccessState) {
+                                          final methods = [
+                                            PaymentMethodDm(
+                                              id: 'Wallet',
+                                              payment: 'Wallet',
+                                              paymentType: 'Wallet',
+                                              description: 'Pay using your wallet balance',
+                                              logo: '',
+                                            ),
+                                            ...state.paymentMethodsResponse
+                                                .paymentMethods!.map((method) {
+                                              if (method.id.toString() ==
+                                                  '10') {
+                                                return PaymentMethodDm(
+                                                  id: method.id,
+                                                  payment: 'Visacard/Mastercard',
+                                                  paymentType: method
+                                                      .paymentType,
+                                                  description: method
+                                                      .description,
+                                                  logo: method.logo,
+                                                );
+                                              }
+                                              return method;
+                                            }).toList(),
+                                          ];
+                                          return Column(
+                                            children: methods.map((method) {
+                                              final isSelected = selectedPaymentMethodId ==
+                                                  method.id.toString();
+                                              return GestureDetector(
+                                                onTap: () {
+                                                  setModalState(() {
+                                                    selectedPaymentMethodId =
+                                                        method.id.toString();
+                                                  });
+                                                },
+                                                child: Container(
+                                                  margin: EdgeInsets.only(
+                                                      bottom: 16.h),
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(
+                                                      colors: isSelected
+                                                          ? [
+                                                        AppColors.primary
+                                                            .withOpacity(0.3),
+                                                        AppColors.primary
+                                                            .withOpacity(0.1),
+                                                      ]
+                                                          : [
+                                                        AppColors.white,
+                                                        AppColors.lightGray,
+                                                      ],
+                                                      begin: Alignment.topLeft,
+                                                      end: Alignment
+                                                          .bottomRight,
+                                                    ),
+                                                    borderRadius: BorderRadius
+                                                        .circular(16.r),
+                                                    border: Border.all(
+                                                      color: isSelected
+                                                          ? AppColors.primary
+                                                          : AppColors
+                                                          .grey[300]!,
+                                                      width: isSelected
+                                                          ? 3.w
+                                                          : 1.w,
+                                                    ),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: AppColors.grey
+                                                            .withOpacity(
+                                                            isSelected
+                                                                ? 0.3
+                                                                : 0.15),
+                                                        spreadRadius: 1,
+                                                        blurRadius: 8,
+                                                        offset: Offset(0, 3.h),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: Container(
+                                                    padding: EdgeInsets.all(
+                                                        isTablet ? 24.w : 20.w),
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment
+                                                          .start,
+                                                      children: [
+                                                        Row(
+                                                          children: [
+                                                            Container(
+                                                              width: isTablet
+                                                                  ? 70.w
+                                                                  : 60.w,
+                                                              height: isTablet
+                                                                  ? 70.h
+                                                                  : 60.h,
+                                                              decoration: BoxDecoration(
+                                                                borderRadius: BorderRadius
+                                                                    .circular(
+                                                                    12.r),
+                                                                color: AppColors
+                                                                    .lightGray,
+                                                              ),
+                                                              child: method
+                                                                  .logo !=
+                                                                  null &&
+                                                                  method.logo!
+                                                                      .isNotEmpty
+                                                                  ? ClipRRect(
+                                                                borderRadius: BorderRadius
+                                                                    .circular(
+                                                                    12.r),
+                                                                child: Image
+                                                                    .network(
+                                                                  method.logo!,
+                                                                  fit: BoxFit
+                                                                      .cover,
+                                                                  errorBuilder: (
+                                                                      context,
+                                                                      _, __) =>
+                                                                      Icon(
+                                                                        Icons
+                                                                            .payment,
+                                                                        color: AppColors
+                                                                            .primary,
+                                                                        size: isTablet
+                                                                            ? 32
+                                                                            .sp
+                                                                            : 28
+                                                                            .sp,
+                                                                      ),
+                                                                ),
+                                                              )
+                                                                  : Icon(
+                                                                method
+                                                                    .paymentType
+                                                                    ?.toLowerCase() ==
+                                                                    'wallet'
+                                                                    ? Icons
+                                                                    .account_balance_wallet
+                                                                    : Icons
+                                                                    .payment,
+                                                                color: AppColors
+                                                                    .primary,
+                                                                size: isTablet
+                                                                    ? 32.sp
+                                                                    : 28.sp,
+                                                              ),
+                                                            ),
+                                                            SizedBox(
+                                                                width: 16.w),
+                                                            Expanded(
+                                                              child: Column(
+                                                                crossAxisAlignment: CrossAxisAlignment
+                                                                    .start,
+                                                                children: [
+                                                                  Text(
+                                                                    method
+                                                                        .payment ??
+                                                                        "Unknown Payment",
+                                                                    style: TextStyle(
+                                                                      fontSize: isTablet
+                                                                          ? 20
+                                                                          .sp
+                                                                          : 18
+                                                                          .sp,
+                                                                      fontWeight: FontWeight
+                                                                          .bold,
+                                                                      color: isSelected
+                                                                          ? AppColors
+                                                                          .primary
+                                                                          : AppColors
+                                                                          .darkGray,
+                                                                    ),
+                                                                    maxLines: 1,
+                                                                    overflow: TextOverflow
+                                                                        .ellipsis,
+                                                                  ),
+                                                                  SizedBox(
+                                                                      height: 4
+                                                                          .h),
+                                                                  Container(
+                                                                    padding: EdgeInsets
+                                                                        .symmetric(
+                                                                      horizontal: 12
+                                                                          .w,
+                                                                      vertical: 4
+                                                                          .h,
+                                                                    ),
+                                                                    decoration: BoxDecoration(
+                                                                      color: _getPaymentTypeColor(
+                                                                          method
+                                                                              .paymentType),
+                                                                      borderRadius: BorderRadius
+                                                                          .circular(
+                                                                          12.r),
+                                                                    ),
+                                                                    child: Text(
+                                                                      _getPaymentTypeText(
+                                                                          method
+                                                                              .paymentType),
+                                                                      style: TextStyle(
+                                                                        color: AppColors
+                                                                            .white,
+                                                                        fontSize: isTablet
+                                                                            ? 14
+                                                                            .sp
+                                                                            : 12
+                                                                            .sp,
+                                                                        fontWeight: FontWeight
+                                                                            .w600,
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                            if (isSelected)
+                                                              Icon(
+                                                                Icons
+                                                                    .check_circle,
+                                                                color: AppColors
+                                                                    .primary,
+                                                                size: isTablet
+                                                                    ? 28.sp
+                                                                    : 24.sp,
+                                                              ),
+                                                          ],
+                                                        ),
+                                                        if (method
+                                                            .description !=
+                                                            null &&
+                                                            method.description!
+                                                                .isNotEmpty &&
+                                                            method.id
+                                                                .toString() !=
+                                                                '10') ...[
+                                                          SizedBox(
+                                                              height: 12.h),
+                                                          InkWell(
+                                                            onTap: () =>
+                                                                _handlePaymentDescription(
+                                                                    method
+                                                                        .description!),
+                                                            child: Container(
+                                                              padding: EdgeInsets
+                                                                  .all(
+                                                                  isTablet ? 16
+                                                                      .w : 12
+                                                                      .w),
+                                                              decoration: BoxDecoration(
+                                                                color: AppColors
+                                                                    .primary
+                                                                    .withOpacity(
+                                                                    0.1),
+                                                                borderRadius: BorderRadius
+                                                                    .circular(
+                                                                    8.r),
+                                                                border: Border
+                                                                    .all(
+                                                                    color: AppColors
+                                                                        .primary
+                                                                        .withOpacity(
+                                                                        0.3)),
+                                                              ),
+                                                              child: Row(
+                                                                children: [
+                                                                  Icon(
+                                                                    _isUrl(
+                                                                        method
+                                                                            .description!)
+                                                                        ? Icons
+                                                                        .link
+                                                                        : Icons
+                                                                        .copy_sharp,
+                                                                    color: AppColors
+                                                                        .primary,
+                                                                    size: isTablet
+                                                                        ? 20.sp
+                                                                        : 16.sp,
+                                                                  ),
+                                                                  SizedBox(
+                                                                      width: 8
+                                                                          .w),
+                                                                  Expanded(
+                                                                    child: Text(
+                                                                      method
+                                                                          .description!,
+                                                                      style: TextStyle(
+                                                                        fontSize: isTablet
+                                                                            ? 16
+                                                                            .sp
+                                                                            : 14
+                                                                            .sp,
+                                                                        color: AppColors
+                                                                            .primary,
+                                                                        fontWeight: FontWeight
+                                                                            .w500,
+                                                                      ),
+                                                                      maxLines: 2,
+                                                                      overflow: TextOverflow
+                                                                          .ellipsis,
+                                                                    ),
+                                                                  ),
+                                                                  Icon(
+                                                                    Icons
+                                                                        .touch_app,
+                                                                    color: AppColors
+                                                                        .primary,
+                                                                    size: isTablet
+                                                                        ? 20.sp
+                                                                        : 16.sp,
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ] else
+                                                          if (method.id
+                                                              .toString() ==
+                                                              '10') ...[
+                                                            SizedBox(
+                                                                height: 12.h),
+                                                            Container(
+                                                              padding: EdgeInsets
+                                                                  .all(
+                                                                  isTablet ? 16
+                                                                      .w : 12
+                                                                      .w),
+                                                              decoration: BoxDecoration(
+                                                                color: AppColors
+                                                                    .primary
+                                                                    .withOpacity(
+                                                                    0.1),
+                                                                borderRadius: BorderRadius
+                                                                    .circular(
+                                                                    8.r),
+                                                                border: Border
+                                                                    .all(
+                                                                    color: AppColors
+                                                                        .primary
+                                                                        .withOpacity(
+                                                                        0.3)),
+                                                              ),
+                                                              child: Row(
+                                                                children: [
+                                                                  Icon(
+                                                                    Icons
+                                                                        .info_outline,
+                                                                    color: AppColors
+                                                                        .primary,
+                                                                    size: isTablet
+                                                                        ? 20.sp
+                                                                        : 16.sp,
+                                                                  ),
+                                                                  SizedBox(
+                                                                      width: 8
+                                                                          .w),
+                                                                  Expanded(
+                                                                    child: Text(
+                                                                      'Press "Confirm Purchase" to proceed with the payment link',
+                                                                      style: TextStyle(
+                                                                        fontSize: isTablet
+                                                                            ? 16
+                                                                            .sp
+                                                                            : 14
+                                                                            .sp,
+                                                                        color: AppColors
+                                                                            .primary,
+                                                                        fontWeight: FontWeight
+                                                                            .w500,
+                                                                      ),
+                                                                      maxLines: 2,
+                                                                      overflow: TextOverflow
+                                                                          .ellipsis,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ],
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            }).toList(),
+                                          );
+                                        } else
+                                        if (state is PaymentMethodsErrorState) {
+                                          return Center(
+                                            child: Text(
+                                              'Something went wrong, please try again',
+                                              style: TextStyle(
+                                                fontSize: isTablet ? 18.sp : 16
+                                                    .sp,
+                                                color: AppColors.grey[600],
+                                              ),
+                                            ),
+                                          );
+                                        } else {
+                                          return const SizedBox.shrink();
+                                        }
+                                      },
                                     ),
-                                  );
-                                  return;
-                                }
-                                imageData = 'data:image/jpeg;base64,$base64String';
-                              }
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: EdgeInsets.all(isTablet ? 24.w : 16.w),
+                                decoration: BoxDecoration(
+                                  color: AppColors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.grey.withOpacity(0.1),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, -2),
+                                    ),
+                                  ],
+                                ),
+                                child: ElevatedButton(
+                                  onPressed: (selectedPaymentMethodId != null &&
+                                      (selectedPaymentMethodId == 'Wallet' ||
+                                          selectedPaymentMethodId == '10' ||
+                                          base64String != null))
+                                      ? () async {
+                                    String imageData;
+                                    if (selectedPaymentMethodId == 'Wallet' ||
+                                        selectedPaymentMethodId == '10') {
+                                      imageData = 'wallet';
+                                    } else {
+                                      if (base64String == null) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                                'Please upload the invoice image'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      imageData =
+                                      'data:image/jpeg;base64,$base64String';
+                                    }
 
-                              try {
-                                if (chapters == null) {
-                                  await buyCourseCubit.buyPackage(
-                                    courseId: "${course.id ?? 0}",
-                                    paymentMethodId: selectedPaymentMethodId!,
-                                    amount: finalPrice.toStringAsFixed(2),
-                                    userId: "${SelectedStudent.studentId}",
-                                    duration: "${course.allPrices?.isNotEmpty == true ? course.allPrices!.first.duration ?? 30 : 30}",
-                                    image: imageData,
-                                    promoCode: promoController.text.isNotEmpty ? promoController.text : null,
-                                  );
-                                } else {
-                                  await chapterDataCubit.buyChapters(
-                                    courseId: "${course.id ?? 0}",
-                                    paymentMethodId: selectedPaymentMethodId!,
-                                    amount: finalPrice.toStringAsFixed(2),
-                                    userId: "${SelectedStudent.studentId}",
-                                    chapters: chapters
-                                        .map((chapter) => {
-                                      'chapter_id': "${chapter.id ?? 0}",
-                                      'duration': "${chapter.chapterAllPrices?.isNotEmpty == true ? chapter.chapterAllPrices!.first.duration ?? 30 : 30}",
-                                    })
-                                        .toList(),
-                                    image: imageData,
-                                    promoCode: promoController.text.isNotEmpty ? promoController.text : null,
-                                  );
-                                }
-                              } catch (e) {
-                                developer.log('Error in purchase: $e');
-                                showTopSnackBar(
-                                  context,
-                                  'Something went wrong, please try again: $e',
-                                  AppColors.red,
-                                );
-                              }
-                            }
-                                : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12.r),
+                                    try {
+                                      if (chapters == null) {
+                                        await buyCourseCubit.buyPackage(
+                                          courseId: "${course.id ?? 0}",
+                                          paymentMethodId: selectedPaymentMethodId!,
+                                          amount: finalPrice.toStringAsFixed(2),
+                                          userId: "${SelectedStudent
+                                              .studentId}",
+                                          duration: "${course.allPrices
+                                              ?.isNotEmpty == true
+                                              ? course.allPrices!.first
+                                              .duration ?? 30
+                                              : 30}",
+                                          image: imageData,
+                                          promoCode: promoController.text
+                                              .isNotEmpty
+                                              ? promoController.text
+                                              : null,
+                                        );
+                                      } else {
+                                        await chapterDataCubit.buyChapters(
+                                          courseId: "${course.id ?? 0}",
+                                          paymentMethodId: selectedPaymentMethodId!,
+                                          amount: finalPrice.toStringAsFixed(2),
+                                          userId: "${SelectedStudent
+                                              .studentId}",
+                                          chapters: chapters
+                                              .map((chapter) =>
+                                          {
+                                            'chapter_id': "${chapter.id ?? 0}",
+                                            'duration': "${chapter
+                                                .chapterAllPrices?.isNotEmpty ==
+                                                true ? chapter.chapterAllPrices!
+                                                .first.duration ?? 30 : 30}",
+                                          })
+                                              .toList(),
+                                          image: imageData,
+                                          promoCode: promoController.text
+                                              .isNotEmpty
+                                              ? promoController.text
+                                              : null,
+                                        );
+                                      }
+                                    } catch (e) {
+                                      developer.log('Error in purchase: $e');
+                                      showTopSnackBar(
+                                        context,
+                                        'Something went wrong, please try again: $e',
+                                        AppColors.red,
+                                      );
+                                    }
+                                  }
+                                      : null,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12.r),
+                                    ),
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: isTablet ? 20.h : 16.h),
+                                    minimumSize: Size(double.infinity,
+                                        isTablet ? 56.h : 50.h),
+                                  ),
+                                  child: Text(
+                                    'Confirm Purchase',
+                                    style: TextStyle(
+                                      color: AppColors.white,
+                                      fontSize: isTablet ? 18.sp : 16.sp,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
                               ),
-                              padding: EdgeInsets.symmetric(vertical: isTablet ? 20.h : 16.h),
-                              minimumSize: Size(double.infinity, isTablet ? 56.h : 50.h),
-                            ),
-                            child: Text(
-                              'Confirm Purchase',
-                              style: TextStyle(
-                                color: AppColors.white,
-                                fontSize: isTablet ? 18.sp : 16.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
+                        );
+                      }),
+                  ));
             },
           );
         },

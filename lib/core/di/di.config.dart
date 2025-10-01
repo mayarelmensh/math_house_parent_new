@@ -98,6 +98,9 @@ import '../../features/pages/courses_screen/cubit/buy_course_cubit.dart'
 import '../../features/pages/courses_screen/cubit/chapter_data_cubit.dart'
     as _i598;
 import '../../features/pages/courses_screen/cubit/courses_cubit.dart' as _i91;
+import '../../features/pages/currencies_list/cubit/currencies_list_cubit.dart'
+    as _i764;
+import '../../features/pages/home_screen/cubit/home_screen_cubit.dart' as _i843;
 import '../../features/pages/my_courses_screen/cuibt/my_courses_cuibt.dart'
     as _i348;
 import '../../features/pages/my_packages_screen/cubit/my_package_cubit.dart'
@@ -156,6 +159,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i222.PaymentInvoiceCubit>(
       () => _i222.PaymentInvoiceCubit(gh<_i1047.ApiManager>()),
     );
+    gh.factory<_i764.CurrenciesListCubit>(
+      () => _i764.CurrenciesListCubit(gh<_i1047.ApiManager>()),
+    );
     gh.factory<_i486.SendCodeDataSource>(
       () => _i86.SendCodeRemoteDataSourceImpl(
         apiManager: gh<_i1047.ApiManager>(),
@@ -209,6 +215,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i598.ChapterDataCubit>(
       () => _i598.ChapterDataCubit(gh<_i1047.ApiManager>()),
+    );
+    gh.factory<_i843.HomeScreenCubit>(
+      () => _i843.HomeScreenCubit(gh<_i1047.ApiManager>()),
     );
     gh.factory<_i348.MyCoursesCubit>(
       () => _i348.MyCoursesCubit(gh<_i1047.ApiManager>()),

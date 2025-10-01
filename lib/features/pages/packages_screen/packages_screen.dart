@@ -8,7 +8,6 @@ import 'package:math_house_parent_new/core/widgets/custom_app_bar.dart';
 import '../../../core/di/di.dart';
 import '../../../data/models/student_selected.dart';
 import '../../../data/models/my_course_model.dart';
-
 import '../my_courses_screen/cuibt/my_courses_cuibt.dart';
 import '../my_courses_screen/cuibt/my_courses_states.dart';
 import 'cubit/packages_cubit.dart';
@@ -491,7 +490,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
                                   ),
                                 ),
                                 Text(
-                                  "${package.price ?? 0} EGP",
+                                  "${package.price ?? 0} \$",
                                   style: TextStyle(
                                     fontSize: 15.sp,
                                     fontWeight: FontWeight.w700,

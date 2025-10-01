@@ -20,7 +20,7 @@ class SelectBuyOrMyPackagesScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'Courses',
+        title: 'Packages',
         actions: [
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),

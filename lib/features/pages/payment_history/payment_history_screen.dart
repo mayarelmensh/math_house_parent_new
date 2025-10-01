@@ -206,7 +206,7 @@ class _PaymentScreenViewState extends State<PaymentScreenView> {
 
   Widget _buildCompactFilterSection() {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -390,7 +390,7 @@ class _PaymentScreenViewState extends State<PaymentScreenView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Total: ${totalAmount.toStringAsFixed(2)} EGP',
+                      'Total: ${totalAmount.toStringAsFixed(2)} \$',
                       style: TextStyle(
                         fontSize: 20.sp,
                         color: AppColors.white,

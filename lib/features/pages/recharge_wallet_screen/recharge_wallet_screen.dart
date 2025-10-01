@@ -687,7 +687,7 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
                   if (state is WalletLoaded) {
                     balance = state.response.money;
                   }
-                  developer.log('Current wallet balance: $balance EGP, Loading: $isLoading');
+                  developer.log('Current wallet balance: $balance \$, Loading: $isLoading');
                   return Container(
                     padding: EdgeInsets.symmetric(horizontal: 16.w,vertical: 8.h),
                     margin: EdgeInsets.symmetric(horizontal:16.w,vertical: 8.h),
@@ -771,7 +771,7 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
                       controller: _amountController,
                       keyboardType: TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
-                        hintText: 'Enter amount in EGP',
+                        hintText: 'Enter amount in \$',
                         prefixIcon: Icon(
                           Icons.monetization_on,
                           color: AppColors.primary,
@@ -798,7 +798,7 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
                     if (rechargeAmount != null && rechargeAmount! > 0) ...[
                       SizedBox(height: 8.h),
                       Text(
-                        "Amount: ${rechargeAmount!.toStringAsFixed(2)} EGP",
+                        "Amount: ${rechargeAmount!.toStringAsFixed(2)} \$",
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.bold,

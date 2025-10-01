@@ -107,7 +107,7 @@ class _WalletHistoryScreenState extends State<WalletHistoryScreen> {
                 children: [
                   _buildFilterChip('all', 'All'),
                   SizedBox(width: 8.w),
-                  _buildFilterChip('pending', 'Pending'),
+                  _buildFilterChip('pendding', 'Pending'),
                   SizedBox(width: 8.w),
                   _buildFilterChip('approve', 'Approved'),
                   SizedBox(width: 8.w),
@@ -198,7 +198,7 @@ class _WalletHistoryScreenState extends State<WalletHistoryScreen> {
                     ),
                   ),
                   Text(
-                    '${response.money ?? 0} EGP',
+                    '${response.money ?? 0} \$',
                     style: TextStyle(
                       fontSize: 24.sp,
                       fontWeight: FontWeight.bold,
@@ -238,7 +238,7 @@ class _WalletHistoryScreenState extends State<WalletHistoryScreen> {
                         vertical: 8.h,
                       ),
                       title: Text(
-                        'Amount: ${history.wallet ?? 0} EGP',
+                        'Amount: ${history.wallet ?? 0} \$',
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w600,

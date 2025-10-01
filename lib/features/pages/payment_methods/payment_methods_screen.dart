@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:math_house_parent_new/features/pages/payment_methods/cubit/buy_package_states.dart';
 import 'package:math_house_parent_new/core/di/di.dart';
 import 'package:math_house_parent_new/core/utils/app_colors.dart';
 import 'package:math_house_parent_new/core/utils/app_routes.dart';
@@ -15,11 +15,14 @@ import 'package:math_house_parent_new/domain/entities/payment_methods_response_e
 import 'package:math_house_parent_new/features/pages/payment_methods/cubit/payment_methods_cubit.dart';
 import 'package:math_house_parent_new/features/pages/payment_methods/cubit/payment_methods_states.dart';
 import 'package:math_house_parent_new/features/pages/payment_methods/cubit/buy_package_cubit.dart';
+import 'package:math_house_parent_new/features/pages/payment_methods/cubit/buy_package_states.dart';
 import 'package:math_house_parent_new/core/utils/custom_snack_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'dart:developer' as developer;
+import '../../../../data/models/currency_model.dart'; // تأكد من استيراد المودل
+import '../currencies_list/cubit/currencies_list_cubit.dart';
+import '../currencies_list/cubit/currencies_list_states.dart'; // استيراد الستيتس
 
 class PaymentMethodsScreen extends StatefulWidget {
   const PaymentMethodsScreen({Key? key}) : super(key: key);
@@ -31,17 +34,21 @@ class PaymentMethodsScreen extends StatefulWidget {
 class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   final paymentMethodsCubit = getIt<PaymentMethodsCubit>();
   final buyPackageCubit = getIt<BuyPackageCubit>();
+  final currenciesCubit =
+      getIt<CurrenciesListCubit>(); // إضافة الكيوبت الخاص بالعملات
   final ImagePicker _picker = ImagePicker();
 
   int? packageId;
   String? packageName;
   String? packageModule;
   int? packageDuration;
-  double? packagePrice;
+  double? packagePrice; // نفترض أن هذا السعر الأساسي بالـ USD
 
   String? base64String;
   Uint8List? imageBytes;
   PaymentMethodEntity? selectedMethod;
+
+  Currency? selectedCurrency; // العملة المختارة
 
   final PaymentMethodEntity _walletPaymentMethod = PaymentMethodEntity(
     id: "Wallet",
@@ -52,6 +59,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   );
 
   bool get isTablet => MediaQuery.of(context).size.width > 600;
+
   bool get isDesktop => MediaQuery.of(context).size.width > 1024;
 
   @override
@@ -59,7 +67,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args =
-      ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
       setState(() {
         packageId = args?['packageId'] as int?;
@@ -70,6 +78,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       });
 
       paymentMethodsCubit.getPaymentMethods(userId: SelectedStudent.studentId);
+      currenciesCubit.getCurrenciesList(); // جلب قائمة العملات
     });
   }
 
@@ -77,6 +86,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   void dispose() {
     paymentMethodsCubit.close();
     buyPackageCubit.close();
+    currenciesCubit.close(); // إغلاق الكيوبت
     super.dispose();
   }
 
@@ -207,7 +217,16 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
     );
   }
 
-  Widget _buildCompactPackageInfoCard() {
+  Widget _buildCompactPackageInfoCard(List<Currency> currencies) {
+    // افتراضيًا، اختر EGP إذا لم يتم الاختيار بعد
+    selectedCurrency ??= currencies.firstWhere(
+      (c) => c.currency == 'EGP',
+      orElse: () => currencies.first,
+    );
+
+    // حساب السعر المعروض بناءً على العملة المختارة
+    double displayedPrice = (packagePrice ?? 0.0) * selectedCurrency!.amount;
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       padding: EdgeInsets.all(isTablet ? 20.w : 5.w),
@@ -259,13 +278,45 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                   color: AppColors.grey[800],
                 ),
               ),
-              Text(
-                '${packagePrice?.toStringAsFixed(2) ?? "0.00"} EGP',
-                style: TextStyle(
-                  fontSize: isTablet ? 20.sp : 18.sp,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.green,
-                ),
+              Row(
+                children: [
+                  Text(
+                    '${displayedPrice.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: isTablet ? 20.sp : 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.green,
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  DropdownButton<Currency>(
+                    value: selectedCurrency,
+                    icon: Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                    underline: SizedBox(),
+                    // إزالة الخط السفلي
+                    onChanged: (Currency? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          selectedCurrency = newValue;
+                        });
+                      }
+                    },
+                    items: currencies.map<DropdownMenuItem<Currency>>((
+                      Currency currency,
+                    ) {
+                      return DropdownMenuItem<Currency>(
+                        value: currency,
+                        child: Text(
+                          currency.currency,
+                          style: TextStyle(
+                            fontSize: isTablet ? 18.sp : 16.sp,
+                            color: AppColors.grey[800],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
               ),
             ],
           ),
@@ -314,7 +365,9 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       onTap: () {
         setState(() {
           selectedMethod = method;
-          developer.log('Selected payment method ID: ${method.id} (${method.id.runtimeType})');
+          developer.log(
+            'Selected payment method ID: ${method.id} (${method.id.runtimeType})',
+          );
           if (method.id == 'Wallet' || method.id.toString() == '10') {
             imageBytes = null;
             base64String = null;
@@ -327,13 +380,10 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
           gradient: LinearGradient(
             colors: isSelected
                 ? [
-              AppColors.primary.withOpacity(0.3),
-              AppColors.primary.withOpacity(0.1),
-            ]
-                : [
-              AppColors.white,
-              AppColors.lightGray,
-            ],
+                    AppColors.primary.withOpacity(0.3),
+                    AppColors.primary.withOpacity(0.1),
+                  ]
+                : [AppColors.white, AppColors.lightGray],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -367,24 +417,24 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                     ),
                     child: method.logo != null && method.logo!.isNotEmpty
                         ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12.r),
-                      child: Image.network(
-                        method.logo!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, _, __) => Icon(
-                          Icons.payment,
-                          color: AppColors.primary,
-                          size: isTablet ? 32.sp : 28.sp,
-                        ),
-                      ),
-                    )
+                            borderRadius: BorderRadius.circular(12.r),
+                            child: Image.network(
+                              method.logo!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, _, __) => Icon(
+                                Icons.payment,
+                                color: AppColors.primary,
+                                size: isTablet ? 32.sp : 28.sp,
+                              ),
+                            ),
+                          )
                         : Icon(
-                      method.paymentType?.toLowerCase() == 'wallet'
-                          ? Icons.account_balance_wallet
-                          : Icons.payment,
-                      color: AppColors.primary,
-                      size: isTablet ? 32.sp : 28.sp,
-                    ),
+                            method.paymentType?.toLowerCase() == 'wallet'
+                                ? Icons.account_balance_wallet
+                                : Icons.payment,
+                            color: AppColors.primary,
+                            size: isTablet ? 32.sp : 28.sp,
+                          ),
                   ),
                   SizedBox(width: 16.w),
                   Expanded(
@@ -396,7 +446,9 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                           style: TextStyle(
                             fontSize: isTablet ? 20.sp : 18.sp,
                             fontWeight: FontWeight.bold,
-                            color: isSelected ? AppColors.primary : AppColors.darkGray,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.darkGray,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -442,12 +494,16 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8.r),
-                      border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          _isUrl(method.description!) ? Icons.link : Icons.content_copy,
+                          _isUrl(method.description!)
+                              ? Icons.link
+                              : Icons.content_copy,
                           color: AppColors.primary,
                           size: isTablet ? 20.sp : 16.sp,
                         ),
@@ -480,7 +536,9 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8.r),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -552,10 +610,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12.r),
-                child: Image.memory(
-                  imageBytes!,
-                  fit: BoxFit.cover,
-                ),
+                child: Image.memory(imageBytes!, fit: BoxFit.cover),
               ),
             )
           else
@@ -566,10 +621,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                 borderRadius: BorderRadius.circular(12.r),
                 color: Colors.grey[200],
               ),
-              child: Icon(
-                Icons.image,
-                size: isTablet ? 48.sp : 40.sp,
-              ),
+              child: Icon(Icons.image, size: isTablet ? 48.sp : 40.sp),
             ),
           SizedBox(height: 12.h),
           Row(
@@ -627,8 +679,8 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   }
 
   bool _isUrl(String text) {
-    return Uri.tryParse(text)?.hasScheme ?? false &&
-        (text.startsWith('http://') || text.startsWith('https://'));
+    return Uri.tryParse(text)?.hasScheme ??
+        false && (text.startsWith('http://') || text.startsWith('https://'));
   }
 
   void _handlePaymentDescription(String description) async {
@@ -641,7 +693,9 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
           await launchUrl(
             uri,
             mode: LaunchMode.inAppWebView,
-            webViewConfiguration: const WebViewConfiguration(enableJavaScript: true),
+            webViewConfiguration: const WebViewConfiguration(
+              enableJavaScript: true,
+            ),
           );
         }
       } catch (e) {
@@ -659,16 +713,13 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
 
   void confirmPurchase() async {
     if (selectedMethod == null) {
-      showTopSnackBar(
-        context,
-        'Please select a payment method',
-        AppColors.red,
-      );
+      showTopSnackBar(context, 'Please select a payment method', AppColors.red);
       return;
     }
 
     String imageData;
-    if (selectedMethod!.id == 'Wallet' || selectedMethod!.id.toString() == '10') {
+    if (selectedMethod!.id == 'Wallet' ||
+        selectedMethod!.id.toString() == '10') {
       // No image required for Wallet or Paymob (ID: 10) payments
       imageData = 'wallet';
     } else {
@@ -707,6 +758,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       providers: [
         BlocProvider.value(value: paymentMethodsCubit),
         BlocProvider.value(value: buyPackageCubit),
+        BlocProvider.value(value: currenciesCubit),
       ],
       child: BlocListener<BuyPackageCubit, BuyPackageState>(
         listener: (context, state) {
@@ -730,7 +782,8 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
           } else if (state is BuyPackageError) {
             showTopSnackBar(
               context,
-              state.message ?? 'Please select a valid method or check your wallet balance',
+              state.message ??
+                  'Please select a valid method or check your wallet balance',
               AppColors.red,
             );
           }
@@ -738,198 +791,219 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
         child: Scaffold(
           backgroundColor: AppColors.lightGray,
           appBar: CustomAppBar(title: "Select Payment Method"),
-          body: BlocBuilder<PaymentMethodsCubit, PaymentMethodsStates>(
-            bloc: paymentMethodsCubit,
-            builder: (context, state) {
-              if (state is PaymentMethodsLoadingState) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(isTablet ? 24.r : 20.r),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                          strokeWidth: 3.w,
-                        ),
+          body: BlocBuilder<CurrenciesListCubit, CurrenciesStates>(
+            bloc: currenciesCubit,
+            builder: (context, currenciesState) {
+              return BlocBuilder<PaymentMethodsCubit, PaymentMethodsStates>(
+                bloc: paymentMethodsCubit,
+                builder: (context, paymentState) {
+                  if (paymentState is PaymentMethodsLoadingState ||
+                      currenciesState is CurrenciesLoading) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(isTablet ? 24.r : 20.r),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                              strokeWidth: 3.w,
+                            ),
+                          ),
+                          SizedBox(height: 24.h),
+                          Text(
+                            'Loading payment methods and currencies...',
+                            style: TextStyle(
+                              fontSize: isTablet ? 18.sp : 16.sp,
+                              color: AppColors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 24.h),
-                      Text(
-                        'Loading payment methods...',
-                        style: TextStyle(
-                          fontSize: isTablet ? 18.sp : 16.sp,
-                          color: AppColors.grey[600],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              } else if (state is PaymentMethodsSuccessState) {
-                final methods = [
-                  _walletPaymentMethod,
-                  ...state.paymentMethodsResponse.paymentMethods!.map((method) {
-                    if (method.id.toString() == '10') {
-                      return PaymentMethodEntity(
-                        id: method.id,
-                        payment: 'Visacard/Mastercard',
-                        paymentType: method.paymentType,
-                        description: method.description,
-                        logo: method.logo,
-                      );
-                    }
-                    return method;
-                  }).toList(),
-                ];
+                    );
+                  } else if (paymentState is PaymentMethodsSuccessState &&
+                      currenciesState is CurrenciesSuccess) {
+                    final methods = [
+                      _walletPaymentMethod,
+                      ...paymentState.paymentMethodsResponse.paymentMethods!
+                          .map((method) {
+                            if (method.id.toString() == '10') {
+                              return PaymentMethodEntity(
+                                id: method.id,
+                                payment: 'Visacard/Mastercard',
+                                paymentType: method.paymentType,
+                                description: method.description,
+                                logo: method.logo,
+                              );
+                            }
+                            return method;
+                          })
+                          .toList(),
+                    ];
 
-                return Column(
-                  children: [
-                    _buildCompactPackageInfoCard(),
-                    Expanded(
-                      child: RefreshIndicator(
-                        color: AppColors.primary,
-                        onRefresh: () async {
-                          paymentMethodsCubit.getPaymentMethods(
-                            userId: SelectedStudent.studentId,
-                          );
-                        },
-                        child: ListView.builder(
-                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                          itemCount: methods.length,
-                          itemBuilder: (context, index) =>
-                              _buildPaymentMethodCard(methods[index]),
+                    final currencies = currenciesState.currencies;
+
+                    return Column(
+                      children: [
+                        _buildCompactPackageInfoCard(currencies),
+                        Expanded(
+                          child: RefreshIndicator(
+                            color: AppColors.primary,
+                            onRefresh: () async {
+                              paymentMethodsCubit.getPaymentMethods(
+                                userId: SelectedStudent.studentId,
+                              );
+                              currenciesCubit.getCurrenciesList();
+                            },
+                            child: ListView.builder(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 16.w,
+                                vertical: 8.h,
+                              ),
+                              itemCount: methods.length,
+                              itemBuilder: (context, index) =>
+                                  _buildPaymentMethodCard(methods[index]),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    // Only show payment proof section if:
-                    // 1. A method is selected
-                    // 2. The method is NOT Wallet (ID: "Wallet")
-                    // 3. The method is NOT Paymob (ID: "10")
-                    if (selectedMethod != null &&
-                        selectedMethod!.id != 'Wallet' &&
-                        selectedMethod!.id.toString() != '10')
-                      _buildPaymentProofSection(),
-                    if (selectedMethod != null)
-                      Container(
-                        padding: EdgeInsets.all(isTablet ? 24.w : 16.w),
+                        if (selectedMethod != null &&
+                            selectedMethod!.id != 'Wallet' &&
+                            selectedMethod!.id.toString() != '10')
+                          _buildPaymentProofSection(),
+                        if (selectedMethod != null)
+                          Container(
+                            padding: EdgeInsets.all(isTablet ? 24.w : 16.w),
+                            decoration: BoxDecoration(
+                              color: AppColors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.grey.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, -2),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: confirmPurchase,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  vertical: isTablet ? 20.h : 0.h,
+                                ),
+                                minimumSize: Size(
+                                  double.infinity,
+                                  isTablet ? 56.h : 40.h,
+                                ),
+                              ),
+                              child: Text(
+                                'Confirm Purchase',
+                                style: TextStyle(
+                                  color: AppColors.white,
+                                  fontSize: isTablet ? 18.sp : 16.sp,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  } else {
+                    String errorMessage = 'Failed to load data';
+                    if (paymentState is PaymentMethodsErrorState) {
+                      errorMessage = paymentState.error ?? errorMessage;
+                    } else if (currenciesState is CurrenciesError) {
+                      errorMessage = currenciesState.message ?? errorMessage;
+                    }
+                    return Center(
+                      child: Container(
+                        margin: EdgeInsets.all(isTablet ? 40.r : 32.r),
+                        padding: EdgeInsets.all(isTablet ? 32.r : 24.r),
                         decoration: BoxDecoration(
                           color: AppColors.white,
+                          borderRadius: BorderRadius.circular(16.r),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.grey.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, -2),
+                              color: AppColors.black.withOpacity(0.1),
+                              blurRadius: 10.r,
+                              offset: Offset(0, 4.h),
                             ),
                           ],
                         ),
-                        child: ElevatedButton(
-                          onPressed: confirmPurchase,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12.r),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(16.r),
+                              decoration: BoxDecoration(
+                                color: AppColors.red.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.error_outline,
+                                size: isTablet ? 56.r : 48.r,
+                                color: AppColors.red,
+                              ),
                             ),
-                            padding: EdgeInsets.symmetric(
-                              vertical: isTablet ? 20.h : 0.h,
+                            SizedBox(height: 16.h),
+                            Text(
+                              'Failed to load data',
+                              style: TextStyle(
+                                fontSize: isTablet ? 20.sp : 18.sp,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.grey[800],
+                              ),
                             ),
-                            minimumSize: Size(double.infinity, isTablet ? 56.h : 40.h),
-                          ),
-                          child: Text(
-                            'Confirm Purchase',
-                            style: TextStyle(
-                              color: AppColors.white,
-                              fontSize: isTablet ? 18.sp : 16.sp,
-                              fontWeight: FontWeight.w600,
+                            SizedBox(height: 8.h),
+                            Text(
+                              errorMessage,
+                              style: TextStyle(
+                                fontSize: isTablet ? 16.sp : 14.sp,
+                                color: AppColors.grey[600],
+                              ),
                             ),
-                          ),
+                            SizedBox(height: 24.h),
+                            ElevatedButton(
+                              onPressed: () {
+                                paymentMethodsCubit.getPaymentMethods(
+                                  userId: SelectedStudent.studentId,
+                                );
+                                currenciesCubit.getCurrenciesList();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.white,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 32.w,
+                                  vertical: 12.h,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8.r),
+                                ),
+                                elevation: 2,
+                              ),
+                              child: Text(
+                                'Try Again',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: isTablet ? 16.sp : 14.sp,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                  ],
-                );
-              } else {
-                return Center(
-                  child: Container(
-                    margin: EdgeInsets.all(isTablet ? 40.r : 32.r),
-                    padding: EdgeInsets.all(isTablet ? 32.r : 24.r),
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius: BorderRadius.circular(16.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.black.withOpacity(0.1),
-                          blurRadius: 10.r,
-                          offset: Offset(0, 4.h),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(16.r),
-                          decoration: BoxDecoration(
-                            color: AppColors.red.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.error_outline,
-                            size: isTablet ? 56.r : 48.r,
-                            color: AppColors.red,
-                          ),
-                        ),
-                        SizedBox(height: 16.h),
-                        Text(
-                          'Failed to load payment methods',
-                          style: TextStyle(
-                            fontSize: isTablet ? 20.sp : 18.sp,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.grey[800],
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        Text(
-                          'Please check your connection and try again',
-                          style: TextStyle(
-                            fontSize: isTablet ? 16.sp : 14.sp,
-                            color: AppColors.grey[600],
-                          ),
-                        ),
-                        SizedBox(height: 24.h),
-                        ElevatedButton(
-                          onPressed: () {
-                            paymentMethodsCubit.getPaymentMethods(
-                              userId: SelectedStudent.studentId,
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.white,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 32.w,
-                              vertical: 12.h,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                            elevation: 2,
-                          ),
-                          child: Text(
-                            'Try Again',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: isTablet ? 16.sp : 14.sp,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
+                    );
+                  }
+                },
+              );
             },
           ),
         ),
@@ -949,10 +1023,12 @@ class PackagePaymentWebViewScreen extends StatefulWidget {
   });
 
   @override
-  State<PackagePaymentWebViewScreen> createState() => _PackagePaymentWebViewScreenState();
+  State<PackagePaymentWebViewScreen> createState() =>
+      _PackagePaymentWebViewScreenState();
 }
 
-class _PackagePaymentWebViewScreenState extends State<PackagePaymentWebViewScreen> {
+class _PackagePaymentWebViewScreenState
+    extends State<PackagePaymentWebViewScreen> {
   late WebViewController _controller;
   bool _isLoading = true;
 
@@ -1017,10 +1093,7 @@ class _PackagePaymentWebViewScreenState extends State<PackagePaymentWebViewScree
         centerTitle: true,
         title: const Text(
           'Complete Payment',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         foregroundColor: AppColors.primary,
         leading: IconButton(
@@ -1044,4 +1117,4 @@ class _PackagePaymentWebViewScreenState extends State<PackagePaymentWebViewScree
       ),
     );
   }
-  }
+}
