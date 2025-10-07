@@ -88,7 +88,7 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
                       style: TextStyle(
                         fontSize: 14.sp,
                         color: AppColors.grey[600],
-                        height: 1.4,
+                        height: 1.3.h,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -195,12 +195,12 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
                   color: isSelected
                       ? AppColors.primaryColor.withOpacity(0.1)
                       : Colors.white,
-                  margin: EdgeInsets.only(bottom: 8.h),
+                  margin: EdgeInsets.only(bottom: 7.h),
                   elevation: 3,
                   child: ListTile(
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: 16.w,
-                      vertical: 8.h,
+                      vertical: 5.h,
                     ),
                     leading: CircleAvatar(
                       radius: 24.r,

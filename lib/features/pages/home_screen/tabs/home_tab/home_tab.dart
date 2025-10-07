@@ -39,7 +39,7 @@ class _HomeTabState extends State<HomeTab> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = ScreenUtil().screenWidth; // استخدام ScreenUtil بدل MediaQuery
-    final crossAxisCount = (screenWidth / (isDesktop ? 300.w : isTablet ? 250.w : 220.w)).floor().clamp(2, 4);
+    final crossAxisCount = (screenWidth / (isDesktop ? 300.w : isTablet ? 250.w : 400.w)).floor().clamp(2, 4);
     final childAspectRatio = isDesktop ? 1.3 : isTablet ? 1.2 : 1.0;
 
     print("Screen width: $screenWidth, crossAxisCount: $crossAxisCount, childAspectRatio: $childAspectRatio");
@@ -69,7 +69,7 @@ class _HomeTabState extends State<HomeTab> {
           child: SingleChildScrollView(
             physics: AlwaysScrollableScrollPhysics(),
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
+              padding: EdgeInsets.symmetric(vertical: 5.h, horizontal: 12.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -81,7 +81,7 @@ class _HomeTabState extends State<HomeTab> {
                     childAspectRatio: childAspectRatio,
                     crossAxisSpacing: isTablet ? 12.w : 5.w, // متسق مع PaymentsScreen
                     mainAxisSpacing: isTablet ? 12.h : 5.h,
-                    padding: EdgeInsets.all(isTablet ? 20.r : 15.r), // متسق مع PaymentsScreen
+                    padding: EdgeInsets.all(isTablet ? 20.r : 5.r), // متسق مع PaymentsScreen
                     children: [
                       HomeCard(
                         icon: Icons.person_rounded,
@@ -254,10 +254,10 @@ class _HomeTabState extends State<HomeTab> {
         } else if (state is HomeLoadedState) {
           final studentData = state.studentResponse.studentData;
           return Container(
-            margin: EdgeInsets.symmetric(horizontal: 8.w, vertical: 0.h),
+            margin: EdgeInsets.symmetric(horizontal: 8.w,),
             padding: EdgeInsets.symmetric(
               horizontal: isTablet ? 24.w : 20.w,
-              vertical: isTablet ? 20.h : 10.h,
+              vertical: isTablet ? 20.h : 5.h,
             ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -439,8 +439,8 @@ class PaymentsScreen extends StatelessWidget {
     final isTablet = screenWidth > 600;
     final isDesktop = screenWidth > 1024;
 
-    final crossAxisCount = (screenWidth / (isDesktop ? 300.w : isTablet ? 250.w : 220.w)).floor().clamp(2, 4);
-    final childAspectRatio = isDesktop ? 1.3 : isTablet ? 1.2 : 1.0;
+    final crossAxisCount = (screenWidth / (isDesktop ? 300.w : isTablet ? 250.w : 400.w)).floor().clamp(2, 4);
+    final childAspectRatio = isDesktop ? 1.3 : isTablet ? 1.2 : 0.9;
 
     return Scaffold(
       backgroundColor: AppColors.grey[50],

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:device_preview/device_preview.dart'; // ✅ أضف دي
+import 'package:flutter/foundation.dart'; // ✅ ضروري لـ kReleaseMode
+
 import 'package:math_house_parent_new/features/auth/forget_password_screen/forget_password_screen.dart';
 import 'package:math_house_parent_new/features/pages/courses_screen/cources_payment_method_screen.dart';
 import 'package:math_house_parent_new/features/pages/courses_screen/cubit/buy_chapter_cubit.dart';
@@ -63,7 +66,17 @@ void main() async {
       initialTabIndex = 0; // لو فيه studentId، يفتح على HomeTab
     }
   }
-  runApp(MyApp(routeName: routeName, initialTabIndex: initialTabIndex));
+
+  // ✅ هنا فقط أضفنا DevicePreview
+  runApp(
+    DevicePreview(
+      enabled: !kReleaseMode,
+      builder: (context) => MyApp(
+        routeName: routeName,
+        initialTabIndex: initialTabIndex,
+      ),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -92,6 +105,9 @@ class MyApp extends StatelessWidget {
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
+          useInheritedMediaQuery: true, // ✅ ضروري للـ DevicePreview
+          locale: DevicePreview.locale(context), // ✅ ضروري
+          builder: DevicePreview.appBuilder, // ✅ ضروري
           initialRoute: routeName,
           routes: {
             AppRoutes.loginRoute: (context) => LoginScreen(),
@@ -120,7 +136,6 @@ class MyApp extends StatelessWidget {
         ),
       ),
     );
-
   }
 }
 
@@ -194,15 +209,16 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: _screens[_selectedIndex],
       bottomNavigationBar: Container(
+        // height: 90.h,
         margin: EdgeInsets.symmetric(horizontal: 20.w,vertical: 15.h),
         padding: EdgeInsets.symmetric(horizontal: 20.w),
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(40.r),
-            topRight: Radius.circular(40.r),
-            bottomLeft:Radius.circular(40.r) ,
-            bottomRight: Radius.circular(40.r)
+              topLeft: Radius.circular(50.r),
+              topRight: Radius.circular(50.r),
+              bottomLeft:Radius.circular(50.r) ,
+              bottomRight: Radius.circular(50.r)
           ),
           boxShadow: [
             BoxShadow(
@@ -254,7 +270,7 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildNavIcon(IconData icon, bool isSelected) {
     return Container(
-      padding: EdgeInsets.all(8.r),
+      padding: EdgeInsets.only(bottom:5.h,top: 8.h),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: isSelected
@@ -263,7 +279,7 @@ class _MainScreenState extends State<MainScreen> {
       ),
       child: Icon(
         icon,
-        size: 24.sp,
+        size: 28.sp,
         color: isSelected ? AppColors.primaryColor : AppColors.grey[600],
       ),
     );
@@ -271,7 +287,7 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildNavActiveIcon(IconData icon) {
     return Container(
-      padding: EdgeInsets.all(8.r),
+      padding: EdgeInsets.only(bottom:5.h,top: 8.h),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
@@ -283,7 +299,7 @@ class _MainScreenState extends State<MainScreen> {
           end: Alignment.bottomRight,
         ),
       ),
-      child: Icon(icon, size: 24.sp, color: AppColors.white),
+      child: Icon(icon, size: 28.sp, color: AppColors.white),
     );
   }
 }

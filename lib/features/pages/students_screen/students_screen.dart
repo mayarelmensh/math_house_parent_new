@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:math_house_parent_new/core/di/di.dart';
 import 'package:math_house_parent_new/core/utils/app_colors.dart';
 import 'package:math_house_parent_new/core/utils/app_routes.dart';
@@ -42,7 +43,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding:  EdgeInsets.all(16.h),
             child: CustomSearchFilterBar(
               showFilter: false,
               onSearchChanged: (value) {
@@ -96,9 +97,9 @@ class _StudentsScreenState extends State<StudentsScreen> {
                         itemBuilder: (context, index) {
                           final student = students[index];
                           return Card(
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
+                            margin:  EdgeInsets.symmetric(
+                              horizontal: 15.w,
+                              vertical: 5.h,
                             ),
                             child: ListTile(
                               title: Text(student.nickName ?? "No Name"),

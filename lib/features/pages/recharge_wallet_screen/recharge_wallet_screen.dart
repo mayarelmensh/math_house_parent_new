@@ -44,13 +44,16 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
   Uint8List? imageBytes;
 
   bool get isTablet => MediaQuery.of(context).size.width > 600;
+
   bool get isDesktop => MediaQuery.of(context).size.width > 1024;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      developer.log('Initializing WalletRechargeScreen: Fetching payment methods and wallet data for user: ${SelectedStudent.studentId}');
+      developer.log(
+        'Initializing WalletRechargeScreen: Fetching payment methods and wallet data for user: ${SelectedStudent.studentId}',
+      );
       paymentMethodsCubit.getPaymentMethods(userId: SelectedStudent.studentId);
       walletHistoryCubit.fetchWalletData(userId: SelectedStudent.studentId);
     });
@@ -65,7 +68,9 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
   }
 
   void _refreshWalletBalance() {
-    developer.log('Refreshing wallet balance for user: ${SelectedStudent.studentId}');
+    developer.log(
+      'Refreshing wallet balance for user: ${SelectedStudent.studentId}',
+    );
     walletHistoryCubit.fetchWalletData(userId: SelectedStudent.studentId);
   }
 
@@ -97,12 +102,10 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
         final uri = Uri.parse(whatsappUrl);
         final launched = await launchUrl(uri, mode: LaunchMode.inAppWebView);
         if (launched) {
-          developer.log('WhatsApp opened successfully with whatsapp:// protocol');
-          showTopSnackBar(
-            context,
-            'Opening WhatsApp...',
-            AppColors.green,
+          developer.log(
+            'WhatsApp opened successfully with whatsapp:// protocol',
           );
+          showTopSnackBar(context, 'Opening WhatsApp...', AppColors.green);
           return;
         }
       } catch (e) {
@@ -112,14 +115,13 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
       // محاولة 2: فتح عبر wa.me
       try {
         final uri = Uri.parse(whatsappWebUrl);
-        final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        final launched = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
         if (launched) {
           developer.log('WhatsApp opened successfully with wa.me');
-          showTopSnackBar(
-            context,
-            'Opening WhatsApp...',
-            AppColors.green,
-          );
+          showTopSnackBar(context, 'Opening WhatsApp...', AppColors.green);
           return;
         }
       } catch (e) {
@@ -131,11 +133,7 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
         final uri = Uri.parse(whatsappApiUrl);
         await launchUrl(uri, mode: LaunchMode.externalApplication);
         developer.log('WhatsApp opened successfully with api.whatsapp.com');
-        showTopSnackBar(
-          context,
-          'Opening WhatsApp...',
-          AppColors.green,
-        );
+        showTopSnackBar(context, 'Opening WhatsApp...', AppColors.green);
         return;
       } catch (e) {
         developer.log('Failed to open with api.whatsapp.com: $e');
@@ -147,14 +145,9 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
         'Please install WhatsApp or check the phone number',
         AppColors.orange,
       );
-
     } catch (e) {
       developer.log('WhatsApp error: $e');
-      showTopSnackBar(
-        context,
-        'Error: ${e.toString()}',
-        AppColors.red,
-      );
+      showTopSnackBar(context, 'Error: ${e.toString()}', AppColors.red);
     }
   }
 
@@ -185,11 +178,7 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
       }
     } catch (e) {
       developer.log('Error selecting image: $e');
-      showTopSnackBar(
-        context,
-        'Error selecting image: $e',
-        AppColors.red,
-      );
+      showTopSnackBar(context, 'Error selecting image: $e', AppColors.red);
     }
   }
 
@@ -321,8 +310,8 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
   }
 
   bool _isUrl(String text) {
-    return Uri.tryParse(text)?.hasScheme ?? false &&
-        (text.startsWith('http://') || text.startsWith('https://'));
+    return Uri.tryParse(text)?.hasScheme ??
+        false && (text.startsWith('http://') || text.startsWith('https://'));
   }
 
   void _handlePaymentDescription(String description) async {
@@ -335,7 +324,9 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
           await launchUrl(
             uri,
             mode: LaunchMode.inAppWebView,
-            webViewConfiguration: const WebViewConfiguration(enableJavaScript: true),
+            webViewConfiguration: const WebViewConfiguration(
+              enableJavaScript: true,
+            ),
           );
         }
       } catch (e) {
@@ -359,7 +350,9 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
       onTap: () {
         setState(() {
           selectedMethod = method;
-          developer.log('Selected payment method ID: ${method.id} (${method.id.runtimeType})');
+          developer.log(
+            'Selected payment method ID: ${method.id} (${method.id.runtimeType})',
+          );
           if (method.id.toString() == '10') {
             imageBytes = null;
             base64String = null;
@@ -377,13 +370,10 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
           gradient: LinearGradient(
             colors: isSelected
                 ? [
-              AppColors.primary.withOpacity(0.3),
-              AppColors.primary.withOpacity(0.1),
-            ]
-                : [
-              AppColors.white,
-              AppColors.lightGray,
-            ],
+                    AppColors.primary.withOpacity(0.3),
+                    AppColors.primary.withOpacity(0.1),
+                  ]
+                : [AppColors.white, AppColors.lightGray],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -417,22 +407,30 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
                     ),
                     child: method.logo != null && method.logo!.isNotEmpty
                         ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12.r),
-                      child: Image.network(
-                        method.logo!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, _, __) => Icon(
-                          isWhatsAppMethod ?  FontAwesomeIcons.whatsapp : Icons.payment,
-                          color: isWhatsAppMethod ? Colors.green : AppColors.primary,
-                          size: isTablet ? 32.sp : 28.sp,
-                        ),
-                      ),
-                    )
+                            borderRadius: BorderRadius.circular(12.r),
+                            child: Image.network(
+                              method.logo!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, _, __) => Icon(
+                                isWhatsAppMethod
+                                    ? FontAwesomeIcons.whatsapp
+                                    : Icons.payment,
+                                color: isWhatsAppMethod
+                                    ? Colors.green
+                                    : AppColors.primary,
+                                size: isTablet ? 32.sp : 28.sp,
+                              ),
+                            ),
+                          )
                         : Icon(
-                      isWhatsAppMethod ?  FontAwesomeIcons.whatsapp : Icons.payment,
-                      color: isWhatsAppMethod ? Colors.green : AppColors.primary,
-                      size: isTablet ? 32.sp : 28.sp,
-                    ),
+                            isWhatsAppMethod
+                                ? FontAwesomeIcons.whatsapp
+                                : Icons.payment,
+                            color: isWhatsAppMethod
+                                ? Colors.green
+                                : AppColors.primary,
+                            size: isTablet ? 32.sp : 28.sp,
+                          ),
                   ),
                   SizedBox(width: 16.w),
                   Expanded(
@@ -446,7 +444,9 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
                           style: TextStyle(
                             fontSize: isTablet ? 20.sp : 18.sp,
                             fontWeight: FontWeight.bold,
-                            color: isSelected ? AppColors.primary : AppColors.darkGray,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.darkGray,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -493,13 +493,16 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8.r),
-                      border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          _isUrl(method.description!) ?  Icons.open_in_new
-                          : Icons.content_copy,
+                          _isUrl(method.description!)
+                              ? Icons.open_in_new
+                              : Icons.content_copy,
                           color: AppColors.primary,
                           size: isTablet ? 20.sp : 20.sp,
                         ),
@@ -532,7 +535,9 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8.r),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -564,9 +569,11 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
                 Container(
                   padding: EdgeInsets.all(isTablet ? 16.w : 12.w),
                   decoration: BoxDecoration(
-                    color:AppColors.primaryColor.withOpacity(0.1),
+                    color: AppColors.primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8.r),
-                    border: Border.all(color: AppColors.primaryColor.withOpacity(0.3)),
+                    border: Border.all(
+                      color: AppColors.primaryColor.withOpacity(0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -590,7 +597,7 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
                       ),
                       Icon(
                         Icons.open_in_new,
-                        color:AppColors.primaryColor,
+                        color: AppColors.primaryColor,
                         size: isTablet ? 20.sp : 16.sp,
                       ),
                     ],
@@ -643,10 +650,7 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12.r),
-                child: Image.memory(
-                  imageBytes!,
-                  fit: BoxFit.cover,
-                ),
+                child: Image.memory(imageBytes!, fit: BoxFit.cover),
               ),
             )
           else
@@ -657,10 +661,7 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
                 borderRadius: BorderRadius.circular(12.r),
                 color: Colors.grey[200],
               ),
-              child: Icon(
-                Icons.image,
-                size: isTablet ? 48.sp : 40.sp,
-              ),
+              child: Icon(Icons.image, size: isTablet ? 48.sp : 40.sp),
             ),
           SizedBox(height: 12.h),
           Row(
@@ -724,183 +725,199 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
     final isWhatsAppPayment = selectedMethod?.id.toString() == '42';
 
     return MultiBlocProvider(
-        providers: [
-          BlocProvider.value(value: paymentMethodsCubit),
-          BlocProvider.value(value: walletRechargeCubit),
-          BlocProvider.value(value: walletHistoryCubit),
-        ],
-        child: Scaffold(
-            backgroundColor: AppColors.lightGray,
-            appBar: CustomAppBar(title: "Recharge Wallet"),
-            body: BlocListener<WalletRechargeCubit, WalletRechargeStates>(
-              listener: (context, state) {
-                developer.log('WalletRechargeState received: ${state.runtimeType}');
+      providers: [
+        BlocProvider.value(value: paymentMethodsCubit),
+        BlocProvider.value(value: walletRechargeCubit),
+        BlocProvider.value(value: walletHistoryCubit),
+      ],
+      child: Scaffold(
+        backgroundColor: AppColors.lightGray,
+        appBar: CustomAppBar(title: "Recharge Wallet"),
+        body: BlocListener<WalletRechargeCubit, WalletRechargeStates>(
+          listener: (context, state) {
+            developer.log('WalletRechargeState received: ${state.runtimeType}');
 
-                if (state is WalletRechargePaymentPendingState) {
-                  developer.log('Payment link received: ${state.paymentLink}');
+            if (state is WalletRechargePaymentPendingState) {
+              developer.log('Payment link received: ${state.paymentLink}');
 
-                  if (state.paymentLink.isNotEmpty) {
-                    final uri = Uri.tryParse(state.paymentLink);
-                    if (uri != null && (uri.hasScheme || state.paymentLink.startsWith('http'))) {
-                      developer.log('Opening WebView for PayMob payment: ${state.paymentLink}');
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => WalletPaymentWebViewScreen(
-                            paymentLink: state.paymentLink,
-                            onPaymentResult: (isSuccess, errorMessage) {
-                              if (isSuccess) {
-                                showTopSnackBar(
-                                  context,
-                                  'Wallet recharged successfully!',
-                                  AppColors.green,
-                                );
-                                setState(() {
-                                  _amountController.clear();
-                                  rechargeAmount = null;
-                                  selectedMethod = null;
-                                  imageBytes = null;
-                                  base64String = null;
-                                });
-                                _refreshWalletBalance();
-                              } else {
-                                showTopSnackBar(
-                                  context,
-                                  errorMessage ?? 'Payment failed',
-                                  AppColors.red,
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                      ).then((_) {
-                        developer.log('Returned from WebView, refreshing wallet data');
-                        _refreshWalletBalance();
-                      });
-                    } else {
-                      developer.log('Invalid payment link: ${state.paymentLink}');
-                      showTopSnackBar(
-                        context,
-                        'Invalid payment link received from server',
-                        AppColors.red,
-                      );
-                    }
-                  } else {
-                    developer.log('Empty payment link received');
-                    showTopSnackBar(
-                      context,
-                      'No payment link provided by server',
-                      AppColors.red,
-                    );
-                  }
-                } else if (state is WalletRechargeSuccessState) {
-                  developer.log('Wallet recharge successful (non-PayMob method)');
-                  showTopSnackBar(
-                    context,
-                    'Wallet recharge is pending approval!',
-                    AppColors.green,
+              if (state.paymentLink.isNotEmpty) {
+                final uri = Uri.tryParse(state.paymentLink);
+                if (uri != null &&
+                    (uri.hasScheme || state.paymentLink.startsWith('http'))) {
+                  developer.log(
+                    'Opening WebView for PayMob payment: ${state.paymentLink}',
                   );
-                  setState(() {
-                    _amountController.clear();
-                    rechargeAmount = null;
-                    selectedMethod = null;
-                    imageBytes = null;
-                    base64String = null;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => WalletPaymentWebViewScreen(
+                        paymentLink: state.paymentLink,
+                        onPaymentResult: (isSuccess, errorMessage) {
+                          if (isSuccess) {
+                            showTopSnackBar(
+                              context,
+                              'Wallet recharged successfully!',
+                              AppColors.green,
+                            );
+                            setState(() {
+                              _amountController.clear();
+                              rechargeAmount = null;
+                              selectedMethod = null;
+                              imageBytes = null;
+                              base64String = null;
+                            });
+                            _refreshWalletBalance();
+                          } else {
+                            showTopSnackBar(
+                              context,
+                              errorMessage ?? 'Payment failed',
+                              AppColors.red,
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  ).then((_) {
+                    developer.log(
+                      'Returned from WebView, refreshing wallet data',
+                    );
+                    _refreshWalletBalance();
                   });
-                  developer.log('Refreshing wallet after non-PayMob recharge');
-                  _refreshWalletBalance();
-                } else if (state is WalletRechargeErrorState) {
-                  developer.log('Recharge error: ${state.error}');
+                } else {
+                  developer.log('Invalid payment link: ${state.paymentLink}');
                   showTopSnackBar(
                     context,
-                    'Error: something went wrong please try again',
+                    'Invalid payment link received from server',
                     AppColors.red,
                   );
                 }
-              },
-              child: Column(
-                children: [
-                  BlocBuilder<WalletHistoryCubit, WalletState>(
-                    builder: (context, state) {
-                      int? balance = 0;
-                      bool isLoading = state is WalletLoading;
+              } else {
+                developer.log('Empty payment link received');
+                showTopSnackBar(
+                  context,
+                  'No payment link provided by server',
+                  AppColors.red,
+                );
+              }
+            } else if (state is WalletRechargeSuccessState) {
+              developer.log('Wallet recharge successful (non-PayMob method)');
+              showTopSnackBar(
+                context,
+                'Wallet recharge is pending approval!',
+                AppColors.green,
+              );
+              setState(() {
+                _amountController.clear();
+                rechargeAmount = null;
+                selectedMethod = null;
+                imageBytes = null;
+                base64String = null;
+              });
+              developer.log('Refreshing wallet after non-PayMob recharge');
+              _refreshWalletBalance();
+            } else if (state is WalletRechargeErrorState) {
+              developer.log('Recharge error: ${state.error}');
+              showTopSnackBar(
+                context,
+                'Error: something went wrong please try again',
+                AppColors.red,
+              );
+            }
+          },
+          child: Column(
+            children: [
+              BlocBuilder<WalletHistoryCubit, WalletState>(
+                builder: (context, state) {
+                  int? balance = 0;
+                  bool isLoading = state is WalletLoading;
 
-                      if (state is WalletLoaded) {
-                        balance = state.response.money;
-                      }
-                      developer.log('Current wallet balance: $balance \$, Loading: $isLoading');
-                      return Container(
-                          padding: EdgeInsets.symmetric(horizontal: 16.w,vertical: 8.h),
-                          margin: EdgeInsets.symmetric(horizontal:16.w,vertical: 8.h),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight,
-                            borderRadius: BorderRadius.circular(12.r),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.shadowGrey,
-                                blurRadius: 8,
-                                offset: Offset(0, 2.h),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                            Text(
-                            'Balance',
-                            style: TextStyle(
-                              fontSize: 20.sp,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.darkGray,
-                            ),
-                          ),
-                          Row(
-                              children: [
-                              if (isLoading)
-                          Padding(
-                      padding: EdgeInsets.only(right: 8.w),
-                      child: SizedBox(
-                      width: 16.w,
-                      height: 16.h,
-                      child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.primary,
-                      ),
-                      ),
-                      ),
-                      Text(
-                      '$balance',
-                      style: TextStyle(
-                      fontSize: 22.sp,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                      ),
-                      ),
-                      ],
-                      ),
-                      ],
-                      ),
-                      );
-                    },
-                  ),
-                  Container(
-                    margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 0.h),
-                    padding: EdgeInsets.symmetric(horizontal: (isTablet ? 20.w : 16.w),vertical: (isTablet ? 20.w : 5.w)),
+                  if (state is WalletLoaded) {
+                    balance = state.response.money;
+                  }
+                  developer.log(
+                    'Current wallet balance: $balance \$, Loading: $isLoading',
+                  );
+                  return Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 8.h,
+                    ),
+                    margin: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 8.h,
+                    ),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16.r),
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(12.r),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          blurRadius: 8.r,
-                          offset: Offset(0, 3.h),
+                          color: AppColors.shadowGrey,
+                          blurRadius: 8,
+                          offset: Offset(0, 2.h),
                         ),
                       ],
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                      Text(
+                        Text(
+                          'Balance',
+                          style: TextStyle(
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.darkGray,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            if (isLoading)
+                              Padding(
+                                padding: EdgeInsets.only(right: 8.w),
+                                child: SizedBox(
+                                  width: 16.w,
+                                  height: 16.h,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            Text(
+                              '$balance \$',
+                              style: TextStyle(
+                                fontSize: 22.sp,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 0.h),
+                padding: EdgeInsets.symmetric(
+                  horizontal: (isTablet ? 20.w : 16.w),
+                  vertical: (isTablet ? 20.w : 5.w),
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      blurRadius: 8.r,
+                      offset: Offset(0, 3.h),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
                       "Enter Recharge Amount",
                       style: TextStyle(
                         fontSize: 18.sp,
@@ -910,269 +927,301 @@ class _WalletRechargeScreenState extends State<WalletRechargeScreen> {
                     SizedBox(height: 16.h),
                     TextField(
                       controller: _amountController,
-                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Enter amount in \$ ',
                         prefixIcon: Icon(
-                        Icons.monetization_on,
-                        color: AppColors.primary,
-                        size: 20.sp,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                        borderSide: BorderSide(color: AppColors.grey[300]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                        borderSide: BorderSide(color: AppColors.primary, width: 2),
-                      ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                    ),
-                    style: TextStyle(fontSize: 16.sp),
-                    onChanged: (value) {
-                      setState(() {
-                        rechargeAmount = double.tryParse(value);
-                      });
-                      developer.log('Recharge amount updated: $rechargeAmount');
-                    },
-                  ),
-                  if (rechargeAmount != null && rechargeAmount! > 0) ...[
-                    SizedBox(height: 8.h),
-                    Text(
-                      "Amount: ${rechargeAmount!.toStringAsFixed(2)} \$",
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.green,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Expanded(
-              child: BlocBuilder<PaymentMethodsCubit, PaymentMethodsStates>(
-                bloc: paymentMethodsCubit,
-                builder: (context, state) {
-                  if (state is PaymentMethodsLoadingState) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(isTablet ? 24.r : 20.r),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: CircularProgressIndicator(
-                              color: AppColors.primary,
-                              strokeWidth: 3.w,
-                            ),
+                          Icons.monetization_on,
+                          color: AppColors.primary,
+                          size: 20.sp,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                          borderSide: BorderSide(color: AppColors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                          borderSide: BorderSide(
+                            color: AppColors.primary,
+                            width: 2,
                           ),
-                          SizedBox(height: 24.h),
-                          Text(
-                            'Loading payment methods...',
-                            style: TextStyle(
-                              fontSize: isTablet ? 18.sp : 16.sp,
-                              color: AppColors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 12.h,
+                        ),
                       ),
-                    );
-                  } else if (state is PaymentMethodsSuccessState) {
-                    final methods = state.paymentMethodsResponse.paymentMethods
-                        ?.where((method) => method.paymentType?.toLowerCase() != 'wallet')
-                        .toList() ??
-                        [];
-                    developer.log('Loaded ${methods.length} payment methods');
-
-                    return RefreshIndicator(
-                      color: AppColors.primary,
-                      onRefresh: () async {
-                        paymentMethodsCubit.getPaymentMethods(
-                          userId: SelectedStudent.studentId,
+                      style: TextStyle(fontSize: 16.sp),
+                      onChanged: (value) {
+                        setState(() {
+                          rechargeAmount = double.tryParse(value);
+                        });
+                        developer.log(
+                          'Recharge amount updated: $rechargeAmount',
                         );
                       },
-                      child: ListView.builder(
-                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                        itemCount: methods.length,
-                        itemBuilder: (context, index) => _buildPaymentMethodCard(methods[index]),
-                      ),
-                    );
-                  } else if (state is PaymentMethodsErrorState) {
-                    developer.log('Payment methods error: ${state.error}');
-                    return Center(
-                      child: Container(
-                        margin: EdgeInsets.all(isTablet ? 40.r : 32.r),
-                        padding: EdgeInsets.all(isTablet ? 32.r : 24.r),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(16.r),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.black.withOpacity(0.1),
-                              blurRadius: 10.r,
-                              offset: Offset(0, 4.h),
-                            ),
-                          ],
+                    ),
+                    if (rechargeAmount != null && rechargeAmount! > 0) ...[
+                      SizedBox(height: 8.h),
+                      Text(
+                        "Amount: ${rechargeAmount!.toStringAsFixed(2)} \$",
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.green,
                         ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Expanded(
+                child: BlocBuilder<PaymentMethodsCubit, PaymentMethodsStates>(
+                  bloc: paymentMethodsCubit,
+                  builder: (context, state) {
+                    if (state is PaymentMethodsLoadingState) {
+                      return Center(
                         child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              padding: EdgeInsets.all(16.r),
+                              padding: EdgeInsets.all(isTablet ? 24.r : 20.r),
                               decoration: BoxDecoration(
-                                color: AppColors.red.withOpacity(0.1),
+                                color: AppColors.primary.withOpacity(0.1),
                                 shape: BoxShape.circle,
                               ),
-                              child: Icon(
-                                Icons.error_outline,
-                                size: isTablet ? 56.r : 48.r,
-                                color: AppColors.red,
-                              ),
-                            ),
-                            SizedBox(height: 16.h),
-                            Text(
-                              'Failed to load payment methods',
-                              style: TextStyle(
-                                fontSize: isTablet ? 20.sp : 18.sp,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.grey[800],
-                              ),
-                            ),
-                            SizedBox(height: 8.h),
-                            Text(
-                              'Please check your connection and try again',
-                              style: TextStyle(
-                                fontSize: isTablet ? 16.sp : 14.sp,
-                                color: AppColors.grey[600],
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary,
+                                strokeWidth: 3.w,
                               ),
                             ),
                             SizedBox(height: 24.h),
-                            ElevatedButton(
-                              onPressed: () {
-                                paymentMethodsCubit.getPaymentMethods(
-                                  userId: SelectedStudent.studentId,
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: AppColors.white,
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 32.w,
-                                  vertical: 12.h,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8.r),
-                                ),
-                                elevation: 2,
-                              ),
-                              child: Text(
-                                'Try Again',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: isTablet ? 16.sp : 14.sp,
-                                ),
+                            Text(
+                              'Loading payment methods...',
+                              style: TextStyle(
+                                fontSize: isTablet ? 18.sp : 16.sp,
+                                color: AppColors.grey[600],
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    );
-                  } else {
-                    return const SizedBox();
-                  }
-                },
+                      );
+                    } else if (state is PaymentMethodsSuccessState) {
+                      final methods =
+                          state.paymentMethodsResponse.paymentMethods
+                              ?.where(
+                                (method) =>
+                                    method.paymentType?.toLowerCase() !=
+                                    'wallet',
+                              )
+                              .toList() ??
+                          [];
+                      developer.log('Loaded ${methods.length} payment methods');
+
+                      return RefreshIndicator(
+                        color: AppColors.primary,
+                        onRefresh: () async {
+                          paymentMethodsCubit.getPaymentMethods(
+                            userId: SelectedStudent.studentId,
+                          );
+                        },
+                        child: ListView.builder(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 8.h,
+                          ),
+                          itemCount: methods.length,
+                          itemBuilder: (context, index) =>
+                              _buildPaymentMethodCard(methods[index]),
+                        ),
+                      );
+                    } else if (state is PaymentMethodsErrorState) {
+                      developer.log('Payment methods error: ${state.error}');
+                      return Center(
+                        child: Container(
+                          margin: EdgeInsets.all(isTablet ? 40.r : 32.r),
+                          padding: EdgeInsets.all(isTablet ? 32.r : 24.r),
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(16.r),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.black.withOpacity(0.1),
+                                blurRadius: 10.r,
+                                offset: Offset(0, 4.h),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(16.r),
+                                decoration: BoxDecoration(
+                                  color: AppColors.red.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.error_outline,
+                                  size: isTablet ? 56.r : 48.r,
+                                  color: AppColors.red,
+                                ),
+                              ),
+                              SizedBox(height: 16.h),
+                              Text(
+                                'Failed to load payment methods',
+                                style: TextStyle(
+                                  fontSize: isTablet ? 20.sp : 18.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.grey[800],
+                                ),
+                              ),
+                              SizedBox(height: 8.h),
+                              Text(
+                                'Please check your connection and try again',
+                                style: TextStyle(
+                                  fontSize: isTablet ? 16.sp : 14.sp,
+                                  color: AppColors.grey[600],
+                                ),
+                              ),
+                              SizedBox(height: 24.h),
+                              ElevatedButton(
+                                onPressed: () {
+                                  paymentMethodsCubit.getPaymentMethods(
+                                    userId: SelectedStudent.studentId,
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: AppColors.white,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 32.w,
+                                    vertical: 12.h,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8.r),
+                                  ),
+                                  elevation: 2,
+                                ),
+                                child: Text(
+                                  'Try Again',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: isTablet ? 16.sp : 14.sp,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    } else {
+                      return const SizedBox();
+                    }
+                  },
+                ),
               ),
-            ),
-            // إخفاء قسم رفع الصورة إذا كانت طريقة الدفع واتساب
-            if (selectedMethod != null &&
-        selectedMethod!.id.toString() != '10' &&
-            !isWhatsAppPayment)
-    _buildPaymentProofSection(),
-    // إخفاء زر Recharge Wallet إذا كانت طريقة الدفع واتساب
-    if (selectedMethod != null && !isWhatsAppPayment)
-    Container(
-    padding: EdgeInsets.all(isTablet ? 24.w : 16.w),
-    decoration: BoxDecoration(
-    color: AppColors.white,
-    boxShadow: [
-    BoxShadow(
-    color: AppColors.grey.withOpacity(0.1),
-    blurRadius: 10,
-    offset: const Offset(0, -2),
-    ),
-    ],
-    ),
-    child: BlocBuilder<WalletRechargeCubit, WalletRechargeStates>(
-    builder: (context, rechargeState) {
-    final isLoading = rechargeState is WalletRechargeLoadingState;
-    final canRecharge = selectedMethod != null &&
-    rechargeAmount != null &&
-    rechargeAmount! > 0 &&
-    (selectedMethod!.id.toString() == '10' || base64String != null);
+              // إخفاء قسم رفع الصورة إذا كانت طريقة الدفع واتساب
+              if (selectedMethod != null &&
+                  selectedMethod!.id.toString() != '10' &&
+                  !isWhatsAppPayment)
+                _buildPaymentProofSection(),
+              // إخفاء زر Recharge Wallet إذا كانت طريقة الدفع واتساب
+              if (selectedMethod != null && !isWhatsAppPayment)
+                Container(
+                  padding: EdgeInsets.all(isTablet ? 24.w : 16.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.grey.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
+                  child: BlocBuilder<WalletRechargeCubit, WalletRechargeStates>(
+                    builder: (context, rechargeState) {
+                      final isLoading =
+                          rechargeState is WalletRechargeLoadingState;
+                      final canRecharge =
+                          selectedMethod != null &&
+                          rechargeAmount != null &&
+                          rechargeAmount! > 0 &&
+                          (selectedMethod!.id.toString() == '10' ||
+                              base64String != null);
 
-    return ElevatedButton(
-    onPressed: canRecharge && !isLoading
-    ? () async {
-    developer.log(
-    'Recharge button pressed. Payment Method ID: ${selectedMethod!.id}, Amount: $rechargeAmount');
-    String imageData;
-    if (selectedMethod!.id.toString() == '10') {
-    imageData = 'wallet';
-    developer.log('Using PayMob (ID=10), image set to: wallet');
-    } else {
-    imageData = 'data:image/jpeg;base64,$base64String';
-    developer.log('Using other payment method, base64 image provided');
-    }
+                      return ElevatedButton(
+                        onPressed: canRecharge && !isLoading
+                            ? () async {
+                                developer.log(
+                                  'Recharge button pressed. Payment Method ID: ${selectedMethod!.id}, Amount: $rechargeAmount',
+                                );
+                                String imageData;
+                                if (selectedMethod!.id.toString() == '10') {
+                                  imageData = 'wallet';
+                                  developer.log(
+                                    'Using PayMob (ID=10), image set to: wallet',
+                                  );
+                                } else {
+                                  imageData =
+                                      'data:image/jpeg;base64,$base64String';
+                                  developer.log(
+                                    'Using other payment method, base64 image provided',
+                                  );
+                                }
 
-    try {
-    await walletRechargeCubit.rechargeWallet(
-    userId: SelectedStudent.studentId,
-    wallet: rechargeAmount!,
-    paymentMethodId: selectedMethod!.id!,
-    image: imageData,
-    );
-    } catch (e) {
-    developer.log('Error in recharge: $e');
-    showTopSnackBar(
-    context,
-    'Something went wrong, please try again: $e',
-    AppColors.red,
-    );
-    }
-    }
-        : null,
-    style: ElevatedButton.styleFrom(
-    backgroundColor:
-    canRecharge && !isLoading ? AppColors.primary : AppColors.grey[400]!,
-    shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(12.r),
-    ),
-    padding: EdgeInsets.symmetric(
-    vertical: isTablet ? 20.h : 0.h,
-    ),
-    minimumSize: Size(double.infinity, isTablet ? 56.h : 40.h),
-    ),
-    child: Text(
-    isLoading ? "Processing..." : "Recharge Wallet",
-    style: TextStyle(
-    color: AppColors.white,
-    fontSize: isTablet ? 18.sp : 16.sp,
-    fontWeight: FontWeight.w600,
-    ),
-    ),
-    );
-    },
-    ),
-    ),
-    ],
-    ),
-    ),
-    ),
+                                try {
+                                  await walletRechargeCubit.rechargeWallet(
+                                    userId: SelectedStudent.studentId,
+                                    wallet: rechargeAmount!,
+                                    paymentMethodId: selectedMethod!.id!,
+                                    image: imageData,
+                                  );
+                                } catch (e) {
+                                  developer.log('Error in recharge: $e');
+                                  showTopSnackBar(
+                                    context,
+                                    'Something went wrong, please try again: $e',
+                                    AppColors.red,
+                                  );
+                                }
+                              }
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: canRecharge && !isLoading
+                              ? AppColors.primary
+                              : AppColors.grey[400]!,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          padding: EdgeInsets.symmetric(
+                            vertical: isTablet ? 20.h : 0.h,
+                          ),
+                          minimumSize: Size(
+                            double.infinity,
+                            isTablet ? 56.h : 40.h,
+                          ),
+                        ),
+                        child: Text(
+                          isLoading ? "Processing..." : "Recharge Wallet",
+                          style: TextStyle(
+                            color: AppColors.white,
+                            fontSize: isTablet ? 18.sp : 16.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1188,10 +1237,12 @@ class WalletPaymentWebViewScreen extends StatefulWidget {
   });
 
   @override
-  State<WalletPaymentWebViewScreen> createState() => _WalletPaymentWebViewScreenState();
+  State<WalletPaymentWebViewScreen> createState() =>
+      _WalletPaymentWebViewScreenState();
 }
 
-class _WalletPaymentWebViewScreenState extends State<WalletPaymentWebViewScreen> {
+class _WalletPaymentWebViewScreenState
+    extends State<WalletPaymentWebViewScreen> {
   late WebViewController _controller;
   bool _isLoading = true;
   bool _hasError = false;
@@ -1201,7 +1252,9 @@ class _WalletPaymentWebViewScreenState extends State<WalletPaymentWebViewScreen>
   @override
   void initState() {
     super.initState();
-    developer.log('Initializing WalletPaymentWebView with link: ${widget.paymentLink}');
+    developer.log(
+      'Initializing WalletPaymentWebView with link: ${widget.paymentLink}',
+    );
 
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -1229,7 +1282,8 @@ class _WalletPaymentWebViewScreenState extends State<WalletPaymentWebViewScreen>
       );
 
     final uri = Uri.tryParse(widget.paymentLink);
-    if (uri != null && (uri.hasScheme || widget.paymentLink.startsWith('http'))) {
+    if (uri != null &&
+        (uri.hasScheme || widget.paymentLink.startsWith('http'))) {
       developer.log('Loading WebView with URL: ${widget.paymentLink}');
       _controller.loadRequest(Uri.parse(widget.paymentLink));
     } else {
@@ -1282,10 +1336,7 @@ class _WalletPaymentWebViewScreenState extends State<WalletPaymentWebViewScreen>
         centerTitle: true,
         title: const Text(
           'Wallet Recharge Payment',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         foregroundColor: AppColors.primary,
         elevation: 0,

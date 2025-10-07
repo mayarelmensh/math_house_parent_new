@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:math_house_parent_new/core/di/di.dart';
 import 'package:math_house_parent_new/core/widgets/custom_app_bar.dart';
 import 'package:math_house_parent_new/core/utils/flutter_toast.dart';
@@ -24,30 +25,33 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
       backgroundColor: AppColors.white,
       appBar: CustomAppBar(title: "Confirmation Code"),
       body: Padding(
-        padding: const EdgeInsets.all(22.0),
+        padding: EdgeInsets.all(22.r),
         child: Column(
           children: [
             Text(
               "Check the email",
               overflow: TextOverflow.visible,
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.darkGrey),
+              style: TextStyle(
+                color: AppColors.darkGrey,
+                fontSize: 20.sp,
+              ),
             ),
-            const SizedBox(height: 150),
+            SizedBox(height: 150.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: List.generate(6, (index) {
                 return SizedBox(
-                  width: 50,
-                  height: 60,
+                  width: 50.w,
+                  height: 60.h,
                   child: TextField(
                     controller: confirmCodeCubit.controllers[index],
                     focusNode: confirmCodeCubit.focusNodes[index],
                     textAlign: TextAlign.center,
                     keyboardType: TextInputType.number,
                     maxLength: 1,
-                    style: const TextStyle(
-                      fontSize: 24,
+                    style: TextStyle(
+                      fontSize: 24.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.black,
                     ),
@@ -55,11 +59,11 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                       counterText: '',
                       filled: false,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                         borderSide: const BorderSide(color: AppColors.black),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                         borderSide: const BorderSide(
                           color: AppColors.primary,
                           width: 2,
@@ -69,20 +73,18 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (value) {
                       if (value.length == 1 && index < 5) {
-                        FocusScope.of(
-                          context,
-                        ).requestFocus(confirmCodeCubit.focusNodes[index + 1]);
+                        FocusScope.of(context)
+                            .requestFocus(confirmCodeCubit.focusNodes[index + 1]);
                       } else if (value.isEmpty && index > 0) {
-                        FocusScope.of(
-                          context,
-                        ).requestFocus(confirmCodeCubit.focusNodes[index - 1]);
+                        FocusScope.of(context)
+                            .requestFocus(confirmCodeCubit.focusNodes[index - 1]);
                       }
                     },
                   ),
                 );
               }),
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: 40.h),
             BlocConsumer<ConfirmCodeCubit, ConfirmCodeStates>(
               bloc: confirmCodeCubit,
               listener: (context, state) {
@@ -124,17 +126,17 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: EdgeInsets.symmetric(vertical: 16.h),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
+                    child: Text(
                       'Send',
                       style: TextStyle(
                         color: AppColors.white,
-                        fontSize: 18,
+                        fontSize: 18.sp,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
