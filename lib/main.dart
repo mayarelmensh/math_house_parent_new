@@ -69,12 +69,9 @@ void main() async {
 
   // ✅ هنا فقط أضفنا DevicePreview
   runApp(
-    DevicePreview(
-      enabled: !kReleaseMode,
-      builder: (context) => MyApp(
-        routeName: routeName,
-        initialTabIndex: initialTabIndex,
-      ),
+    MyApp(
+      routeName: routeName,
+      initialTabIndex: initialTabIndex,
     ),
   );
 }
@@ -105,9 +102,7 @@ class MyApp extends StatelessWidget {
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          useInheritedMediaQuery: true, // ✅ ضروري للـ DevicePreview
-          locale: DevicePreview.locale(context), // ✅ ضروري
-          builder: DevicePreview.appBuilder, // ✅ ضروري
+
           initialRoute: routeName,
           routes: {
             AppRoutes.loginRoute: (context) => LoginScreen(),
@@ -138,6 +133,7 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
 
 class MainScreen extends StatefulWidget {
   final int initialTabIndex;
