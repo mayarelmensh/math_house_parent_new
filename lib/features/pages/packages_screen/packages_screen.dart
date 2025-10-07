@@ -122,7 +122,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
             style: TextStyle(
               fontSize: 18.sp,
               fontWeight: FontWeight.w700,
-              color: Colors.black87,
+              color: AppColors.primaryColor,
               letterSpacing: 0.3,
             ),
           ),
@@ -182,7 +182,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
                             ),
                             border: InputBorder.none,
                             hintStyle: TextStyle(
-                              fontSize: 13.sp,
+                              fontSize: 18.sp,
                               color: Colors.grey.shade500,
                               fontWeight: FontWeight.w500,
                             ),
@@ -194,7 +194,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
                               child: Text(
                                 c.courseName,
                                 style: TextStyle(
-                                  fontSize: 13.sp,
+                                  fontSize: 16.5.sp,
                                   color: Colors.black87,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -277,22 +277,22 @@ class _PackagesScreenState extends State<PackagesScreen> {
                       ),
                     ),
                     value: selectedModuleFilter,
-                    items: const [
+                    items:  [
                       DropdownMenuItem(
                         value: 'All',
-                        child: Text("All", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                        child: Text("All", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600)),
                       ),
                       DropdownMenuItem(
                         value: 'Live',
-                        child: Text("Live", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                        child: Text("Live", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600)),
                       ),
                       DropdownMenuItem(
                         value: 'Question',
-                        child: Text("Question", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                        child: Text("Question", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600)),
                       ),
                       DropdownMenuItem(
                         value: 'Exam',
-                        child: Text("Exam", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                        child: Text("Exam", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600)),
                       ),
                     ],
                     onChanged: (val) {
@@ -344,7 +344,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
                       Text(
                         "Load Packages",
                         style: TextStyle(
-                          fontSize: 14.sp,
+                          fontSize: 18.sp,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                           letterSpacing: 0.3,
@@ -432,7 +432,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
                             _getModuleText(package.module),
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 12.sp,
+                              fontSize: 16.sp,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -484,7 +484,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
                                 Text(
                                   "Price",
                                   style: TextStyle(
-                                    fontSize: 12.sp,
+                                    fontSize: 14.sp,
                                     color: Colors.grey.shade600,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -492,7 +492,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
                                 Text(
                                   "${package.price ?? 0} \$",
                                   style: TextStyle(
-                                    fontSize: 15.sp,
+                                    fontSize: 18.sp,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.green.shade700,
                                   ),
@@ -520,7 +520,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
                                 Text(
                                   "Duration",
                                   style: TextStyle(
-                                    fontSize: 12.sp,
+                                    fontSize: 14.sp,
                                     color: Colors.grey.shade600,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -528,7 +528,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
                                 Text(
                                   "${package.duration ?? 0} days",
                                   style: TextStyle(
-                                    fontSize: 15.sp,
+                                    fontSize: 18.sp,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.blue.shade700,
                                   ),
@@ -640,7 +640,7 @@ class _PackagesScreenState extends State<PackagesScreen> {
                             Text(
                               'Buy Package',
                               style: TextStyle(
-                                fontSize: 14.sp,
+                                fontSize: 18.sp,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
                                 letterSpacing: 0.3,
@@ -714,108 +714,49 @@ class _PackagesScreenState extends State<PackagesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ScreenUtilInit(
-      designSize: const Size(360, 690),
-      minTextAdapt: true,
-      splitScreenMode: true,
-      builder: (context, child) {
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider(create: (_) => myCoursesCubit),
-            BlocProvider(create: (_) => packagesCubit),
-          ],
-          child: Scaffold(
-            backgroundColor: Colors.grey.shade100,
-            appBar: CustomAppBar(title: "Packages"),
-            body: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-              child: Column(
-                children: [
-                  // Compact Selection Row
-                  _buildCompactSelectionRow(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => myCoursesCubit),
+        BlocProvider(create: (_) => packagesCubit),
+      ],
+      child: Scaffold(
+        backgroundColor: Colors.grey.shade100,
+        appBar: CustomAppBar(title: "Packages"),
+        body: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+          child: Column(
+            children: [
+              // Compact Selection Row
+              _buildCompactSelectionRow(),
 
-                  // Packages List
-                  Expanded(
-                    child: BlocBuilder<PackagesCubit, PackagesStates>(
-                      builder: (context, state) {
-                        if (state is PackagesLoadingState) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CircularProgressIndicator(
-                                  color: AppColors.primaryColor,
-                                  strokeWidth: 3.w,
-                                ),
-                                SizedBox(height: 12.h),
-                                Text(
-                                  "Loading packages...",
-                                  style: TextStyle(
-                                    fontSize: 15.sp,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+              // Packages List
+              Expanded(
+                child: BlocBuilder<PackagesCubit, PackagesStates>(
+                  builder: (context, state) {
+                    if (state is PackagesLoadingState) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              color: AppColors.primaryColor,
+                              strokeWidth: 3.w,
                             ),
-                          );
-                        } else if (state is PackagesSpecificCourseSuccessState) {
-                          var packages = filterPackagesByModule(state.packagesResponseList);
-                          if (packages.isEmpty) {
-                            return Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.all(20.w),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade100,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.grey.withOpacity(0.1),
-                                          spreadRadius: 1.r,
-                                          blurRadius: 6.r,
-                                        ),
-                                      ],
-                                    ),
-                                    child: Icon(
-                                      Icons.inbox_outlined,
-                                      size: 60.sp,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                  ),
-                                  SizedBox(height: 12.h),
-                                  Text(
-                                    "No packages available",
-                                    style: TextStyle(
-                                      fontSize: 18.sp,
-                                      color: Colors.grey.shade700,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  SizedBox(height: 6.h),
-                                  Text(
-                                    "Try changing the filter or selecting another course",
-                                    style: TextStyle(
-                                      fontSize: 13.sp,
-                                      color: Colors.grey.shade500,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
+                            SizedBox(height: 12.h),
+                            Text(
+                              "Loading packages...",
+                              style: TextStyle(
+                                fontSize: 18.sp,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
                               ),
-                            );
-                          }
-                          return ListView.builder(
-                            itemCount: packages.length,
-                            itemBuilder: (_, i) {
-                              final pkg = packages[i];
-                              return _buildEnhancedPackageCard(pkg);
-                            },
-                          );
-                        }
+                            ),
+                          ],
+                        ),
+                      );
+                    } else if (state is PackagesSpecificCourseSuccessState) {
+                      var packages = filterPackagesByModule(state.packagesResponseList);
+                      if (packages.isEmpty) {
                         return Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -834,14 +775,14 @@ class _PackagesScreenState extends State<PackagesScreen> {
                                   ],
                                 ),
                                 child: Icon(
-                                  Icons.touch_app_outlined,
+                                  Icons.inbox_outlined,
                                   size: 60.sp,
                                   color: Colors.grey.shade400,
                                 ),
                               ),
                               SizedBox(height: 12.h),
                               Text(
-                                "Select course first",
+                                "No packages available",
                                 style: TextStyle(
                                   fontSize: 18.sp,
                                   color: Colors.grey.shade700,
@@ -850,25 +791,77 @@ class _PackagesScreenState extends State<PackagesScreen> {
                               ),
                               SizedBox(height: 6.h),
                               Text(
-                                "Then press 'Load Packages' button",
+                                "Try changing the filter or selecting another course",
                                 style: TextStyle(
                                   fontSize: 13.sp,
                                   color: Colors.grey.shade500,
                                   fontWeight: FontWeight.w500,
                                 ),
+                                textAlign: TextAlign.center,
                               ),
                             ],
                           ),
                         );
-                      },
-                    ),
-                  ),
-                ],
+                      }
+                      return ListView.builder(
+                        itemCount: packages.length,
+                        itemBuilder: (_, i) {
+                          final pkg = packages[i];
+                          return _buildEnhancedPackageCard(pkg);
+                        },
+                      );
+                    }
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(20.w),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  spreadRadius: 1.r,
+                                  blurRadius: 6.r,
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.touch_app_outlined,
+                              size: 60.sp,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
+                          SizedBox(height: 12.h),
+                          Text(
+                            "Select course first",
+                            style: TextStyle(
+                              fontSize: 18.sp,
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 6.h),
+                          Text(
+                            "Then press 'Load Packages' button",
+                            style: TextStyle(
+                              fontSize: 18.sp,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

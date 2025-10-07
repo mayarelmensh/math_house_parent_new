@@ -44,11 +44,11 @@ class PaymentModel {
   bool get isApproved =>
       status.toLowerCase() == 'approve' || status.toLowerCase() == 'approved';
 
-  String get formattedPrice => '${price.toString()} جنيه';
+  String get formattedPrice => '${price.toString()} \$';
 
   String get statusInArabic {
-    if (isPending) return 'في الانتظار';
-    if (isApproved) return 'مقبول';
+    if (isPending) return 'pendding';
+    if (isApproved) return 'Approved';
     return status;
   }
 }

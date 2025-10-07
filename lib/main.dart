@@ -75,59 +75,52 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ScreenUtilInit(
-      designSize: const Size(430, 932),
+      designSize: const Size(435, 740),
       minTextAdapt: true,
       splitScreenMode: true,
-      builder: (context, child) {
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider(create: (_) => getIt<ProfileCubit>()),
-            BlocProvider(
-              create: (_) => getIt<GetStudentsCubit>()..getMyStudents(),
-            ),
-            BlocProvider(create: (_) => getIt<CoursesCubit>()),
-            BlocProvider(create: (_) => getIt<PackagesCubit>()),
-            BlocProvider(create: (_) => getIt<MyPackageCubit>()),
-            BlocProvider(create: (_) => getIt<MyCoursesCubit>()),
-            BlocProvider(create: (_) => getIt<BuyChapterCubit>()),
-            BlocProvider(create: (_) => getIt<PromoCodeCubit>()),
-            BlocProvider(create: (_) => getIt<HomeScreenCubit>()),
-          ],
-          child: MaterialApp(
-            debugShowCheckedModeBanner: false,
-            initialRoute: routeName,
-            routes: {
-              AppRoutes.loginRoute: (context) => LoginScreen(),
-              AppRoutes.registerRoute: (context) => RegisterScreen(),
-              AppRoutes.forgetPasswordRoute: (context) =>
-                  ForgetPasswordScreen(),
-              AppRoutes.getStudent: (context) => StudentsScreen(),
-              AppRoutes.mainScreen: (context) =>
-                  MainScreen(initialTabIndex: initialTabIndex),
-              AppRoutes.confirmationScreen: (context) => ConfirmationScreen(),
-              AppRoutes.packagesScreen: (context) => PackagesScreen(),
-              AppRoutes.paymentMethodsScreen: (context) => PaymentMethodsScreen(),
-              // AppRoutes.myStudentScreen: (context) => MyStudentsScreen(), // تعطيل هذا الـ route
-              AppRoutes.buyPackageScreen: (context) => BuyPackageScreen(),
-              AppRoutes.paymentHistory: (context) => PaymentHistoryScreen(),
-              AppRoutes.paymentInvoice: (context) => PaymentInvoiceScreen(),
-              AppRoutes.buyCourse: (context) => BuyCourseScreen(),
-              AppRoutes.scoreSheet: (context) => ScoreSheetScreen(),
-              AppRoutes.rechargeWallet: (context) => WalletRechargeScreen(),
-              AppRoutes.walletHistory: (context) => WalletHistoryScreen(),
-              AppRoutes.myPackagesScreen: (context) => MyPackageScreen(),
-              AppRoutes.notificationsScreen: (context) => NotificationScreen(),
-              AppRoutes.myCourse: (context) => MyCoursesScreen(),
-              AppRoutes.splashScreen: (context) => SplashScreen(),
-              AppRoutes.paymentsScreen: (context) => const PaymentsScreen(),
-              AppRoutes.selectScreen: (context) => SelectScreen(),
-              AppRoutes.selectBuyOrMyPackagesScreen: (context) => SelectBuyOrMyPackagesScreen(),
-              // AppRoutes.coursesPaymentScreen: (context) => CoursesPaymentMethodsScreen(),
-            },
-          ),
-        );
-      },
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => getIt<ProfileCubit>()),
+          BlocProvider(create: (_) => getIt<GetStudentsCubit>()..getMyStudents()),
+          BlocProvider(create: (_) => getIt<CoursesCubit>()),
+          BlocProvider(create: (_) => getIt<PackagesCubit>()),
+          BlocProvider(create: (_) => getIt<MyPackageCubit>()),
+          BlocProvider(create: (_) => getIt<MyCoursesCubit>()),
+          BlocProvider(create: (_) => getIt<BuyChapterCubit>()),
+          BlocProvider(create: (_) => getIt<PromoCodeCubit>()),
+          BlocProvider(create: (_) => getIt<HomeScreenCubit>()),
+        ],
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          initialRoute: routeName,
+          routes: {
+            AppRoutes.loginRoute: (context) => LoginScreen(),
+            AppRoutes.registerRoute: (context) => RegisterScreen(),
+            AppRoutes.forgetPasswordRoute: (context) => ForgetPasswordScreen(),
+            AppRoutes.getStudent: (context) => StudentsScreen(),
+            AppRoutes.mainScreen: (context) => MainScreen(initialTabIndex: initialTabIndex),
+            AppRoutes.confirmationScreen: (context) => ConfirmationScreen(),
+            AppRoutes.packagesScreen: (context) => PackagesScreen(),
+            AppRoutes.paymentMethodsScreen: (context) => PaymentMethodsScreen(),
+            AppRoutes.buyPackageScreen: (context) => BuyPackageScreen(),
+            AppRoutes.paymentHistory: (context) => PaymentHistoryScreen(),
+            AppRoutes.paymentInvoice: (context) => PaymentInvoiceScreen(),
+            AppRoutes.buyCourse: (context) => BuyCourseScreen(),
+            AppRoutes.scoreSheet: (context) => ScoreSheetScreen(),
+            AppRoutes.rechargeWallet: (context) => WalletRechargeScreen(),
+            AppRoutes.walletHistory: (context) => WalletHistoryScreen(),
+            AppRoutes.myPackagesScreen: (context) => MyPackageScreen(),
+            AppRoutes.notificationsScreen: (context) => NotificationScreen(),
+            AppRoutes.myCourse: (context) => MyCoursesScreen(),
+            AppRoutes.splashScreen: (context) => SplashScreen(),
+            AppRoutes.paymentsScreen: (context) => const PaymentsScreen(),
+            AppRoutes.selectScreen: (context) => SelectScreen(),
+            AppRoutes.selectBuyOrMyPackagesScreen: (context) => SelectBuyOrMyPackagesScreen(),
+          },
+        ),
+      ),
     );
+
   }
 }
 
@@ -201,7 +194,7 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: _screens[_selectedIndex],
       bottomNavigationBar: Container(
-        margin: EdgeInsets.symmetric(horizontal: 20.w,vertical: 20.h),
+        margin: EdgeInsets.symmetric(horizontal: 20.w,vertical: 15.h),
         padding: EdgeInsets.symmetric(horizontal: 20.w),
         decoration: BoxDecoration(
           color: AppColors.white,

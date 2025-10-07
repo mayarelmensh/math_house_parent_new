@@ -176,7 +176,7 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
             }
 
             return ListView.builder(
-              padding: EdgeInsets.all(16.r),
+              padding: EdgeInsets.all(12.r),
               itemCount: state.myStudents.length,
               itemBuilder: (context, index) {
                 final student = state.myStudents[index];
@@ -195,7 +195,7 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
                   color: isSelected
                       ? AppColors.primaryColor.withOpacity(0.1)
                       : Colors.white,
-                  margin: EdgeInsets.only(bottom: 12.h),
+                  margin: EdgeInsets.only(bottom: 8.h),
                   elevation: 3,
                   child: ListTile(
                     contentPadding: EdgeInsets.symmetric(
@@ -229,7 +229,7 @@ class _MyStudentsScreenState extends State<MyStudentsScreen> {
                     subtitle: Text(
                       '${student.email ?? ""}${student.category?.cateName != null ? " \n ${student.category!.cateName}" : ""}',
                       style: TextStyle(
-                        fontSize: 14.sp,
+                        fontSize: 16.sp,
                         color: AppColors.grey[600],
                       ),
                     ),

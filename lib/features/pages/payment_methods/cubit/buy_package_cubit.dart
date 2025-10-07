@@ -12,7 +12,7 @@ class BuyPackageCubit extends Cubit<BuyPackageState> {
 
   Future<void> buyPackage({
     required int userId,
-    required int paymentMethodId, // Changed from dynamic to int
+    required dynamic paymentMethodId, // Changed from dynamic to int
     required String? image,
     required int packageId,
   }) async {

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:math_house_parent_new/core/di/di.dart';
 import 'package:math_house_parent_new/core/utils/app_colors.dart';
@@ -20,9 +21,9 @@ import 'package:math_house_parent_new/core/utils/custom_snack_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'dart:developer' as developer;
-import '../../../../data/models/currency_model.dart'; // تأكد من استيراد المودل
+import '../../../../data/models/currency_model.dart';
 import '../currencies_list/cubit/currencies_list_cubit.dart';
-import '../currencies_list/cubit/currencies_list_states.dart'; // استيراد الستيتس
+import '../currencies_list/cubit/currencies_list_states.dart';
 
 class PaymentMethodsScreen extends StatefulWidget {
   const PaymentMethodsScreen({Key? key}) : super(key: key);
@@ -34,21 +35,20 @@ class PaymentMethodsScreen extends StatefulWidget {
 class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   final paymentMethodsCubit = getIt<PaymentMethodsCubit>();
   final buyPackageCubit = getIt<BuyPackageCubit>();
-  final currenciesCubit =
-      getIt<CurrenciesListCubit>(); // إضافة الكيوبت الخاص بالعملات
+  final currenciesCubit = getIt<CurrenciesListCubit>();
   final ImagePicker _picker = ImagePicker();
 
   int? packageId;
   String? packageName;
   String? packageModule;
   int? packageDuration;
-  double? packagePrice; // نفترض أن هذا السعر الأساسي بالـ USD
+  double? packagePrice;
 
   String? base64String;
   Uint8List? imageBytes;
   PaymentMethodEntity? selectedMethod;
 
-  Currency? selectedCurrency; // العملة المختارة
+  Currency? selectedCurrency;
 
   final PaymentMethodEntity _walletPaymentMethod = PaymentMethodEntity(
     id: "Wallet",
@@ -59,15 +59,13 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   );
 
   bool get isTablet => MediaQuery.of(context).size.width > 600;
-
   bool get isDesktop => MediaQuery.of(context).size.width > 1024;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final args =
-          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
       setState(() {
         packageId = args?['packageId'] as int?;
@@ -78,7 +76,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       });
 
       paymentMethodsCubit.getPaymentMethods(userId: SelectedStudent.studentId);
-      currenciesCubit.getCurrenciesList(); // جلب قائمة العملات
+      currenciesCubit.getCurrenciesList();
     });
   }
 
@@ -86,7 +84,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   void dispose() {
     paymentMethodsCubit.close();
     buyPackageCubit.close();
-    currenciesCubit.close(); // إغلاق الكيوبت
+    currenciesCubit.close();
     super.dispose();
   }
 
@@ -218,18 +216,16 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   }
 
   Widget _buildCompactPackageInfoCard(List<Currency> currencies) {
-    // افتراضيًا، اختر EGP إذا لم يتم الاختيار بعد
     selectedCurrency ??= currencies.firstWhere(
-      (c) => c.currency == 'EGP',
+          (c) => c.currency == 'USD',
       orElse: () => currencies.first,
     );
 
-    // حساب السعر المعروض بناءً على العملة المختارة
     double displayedPrice = (packagePrice ?? 0.0) * selectedCurrency!.amount;
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-      padding: EdgeInsets.all(isTablet ? 20.w : 5.w),
+      padding: EdgeInsets.all(isTablet ? 20.w : 10.w),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -293,7 +289,6 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                     value: selectedCurrency,
                     icon: Icon(Icons.arrow_drop_down, color: AppColors.primary),
                     underline: SizedBox(),
-                    // إزالة الخط السفلي
                     onChanged: (Currency? newValue) {
                       if (newValue != null) {
                         setState(() {
@@ -301,9 +296,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                         });
                       }
                     },
-                    items: currencies.map<DropdownMenuItem<Currency>>((
-                      Currency currency,
-                    ) {
+                    items: currencies.map<DropdownMenuItem<Currency>>((Currency currency) {
                       return DropdownMenuItem<Currency>(
                         value: currency,
                         child: Text(
@@ -359,8 +352,99 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
     }
   }
 
+  // دالة لفتح رابط واتساب
+  Future<void> _openWhatsApp(String phoneNumber) async {
+    try {
+      // تنظيف رقم الهاتف من أي رموز أو مسافات
+      String cleanPhone = phoneNumber.trim().replaceAll(RegExp(r'[^\d]'), '');
+
+      // إزالة الأصفار من البداية
+      while (cleanPhone.startsWith('0')) {
+        cleanPhone = cleanPhone.substring(1);
+      }
+
+      // إضافة كود مصر إذا كان الرقم 10 أرقام
+      if (cleanPhone.length == 10 || cleanPhone.length == 9) {
+        cleanPhone = '20$cleanPhone';
+      }
+
+      developer.log('Attempting to open WhatsApp with number: $cleanPhone');
+
+      // محاولة فتح الواتساب بطرق مختلفة
+      final whatsappUrl = 'whatsapp://send?phone=$cleanPhone';
+      final whatsappWebUrl = 'https://wa.me/$cleanPhone';
+      final whatsappApiUrl = 'https://api.whatsapp.com/send?phone=$cleanPhone';
+
+      // محاولة 1: فتح تطبيق الواتساب مباشرة
+      try {
+        final uri = Uri.parse(whatsappUrl);
+        final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (launched) {
+          developer.log('WhatsApp opened successfully with whatsapp:// protocol');
+          showTopSnackBar(
+            context,
+            'Opening WhatsApp...',
+            AppColors.green,
+          );
+          return;
+        }
+      } catch (e) {
+        developer.log('Failed to open with whatsapp:// protocol: $e');
+      }
+
+      // محاولة 2: فتح عبر wa.me
+      try {
+        final uri = Uri.parse(whatsappWebUrl);
+        final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (launched) {
+          developer.log('WhatsApp opened successfully with wa.me');
+          showTopSnackBar(
+            context,
+            'Opening WhatsApp...',
+            AppColors.green,
+          );
+          return;
+        }
+      } catch (e) {
+        developer.log('Failed to open with wa.me: $e');
+      }
+
+      // محاولة 3: فتح عبر api.whatsapp.com
+      try {
+        final uri = Uri.parse(whatsappApiUrl);
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        developer.log('WhatsApp opened successfully with api.whatsapp.com');
+        showTopSnackBar(
+          context,
+          'Opening WhatsApp...',
+          AppColors.green,
+        );
+        return;
+      } catch (e) {
+        developer.log('Failed to open with api.whatsapp.com: $e');
+      }
+
+      // إذا فشلت كل المحاولات
+      showTopSnackBar(
+        context,
+        'Please install WhatsApp or check the phone number',
+        AppColors.orange,
+      );
+
+    } catch (e) {
+      developer.log('WhatsApp error: $e');
+      showTopSnackBar(
+        context,
+        'Error: ${e.toString()}',
+        AppColors.red,
+      );
+    }
+  }
+
   Widget _buildPaymentMethodCard(PaymentMethodEntity method) {
     final isSelected = selectedMethod?.id == method.id;
+    final isWhatsAppMethod = method.id.toString() == '42';
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -368,11 +452,18 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
           developer.log(
             'Selected payment method ID: ${method.id} (${method.id.runtimeType})',
           );
-          if (method.id == 'Wallet' || method.id.toString() == '10') {
+
+          if (method.id == 'Wallet' ||
+              method.id.toString() == '10' ||
+              method.id.toString() == '42') {
             imageBytes = null;
             base64String = null;
           }
         });
+
+        if (isWhatsAppMethod && method.description != null && method.description!.isNotEmpty) {
+          _openWhatsApp(method.description!);
+        }
       },
       child: Container(
         margin: EdgeInsets.only(bottom: 8.h),
@@ -380,9 +471,9 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
           gradient: LinearGradient(
             colors: isSelected
                 ? [
-                    AppColors.primary.withOpacity(0.3),
-                    AppColors.primary.withOpacity(0.1),
-                  ]
+              AppColors.primary.withOpacity(0.3),
+              AppColors.primary.withOpacity(0.1),
+            ]
                 : [AppColors.white, AppColors.lightGray],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -402,7 +493,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
           ],
         ),
         child: Container(
-          padding: EdgeInsets.all(isTablet ? 24.w : 10.w),
+          padding: EdgeInsets.all(isTablet ? 24.w : 20.h),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -417,24 +508,26 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                     ),
                     child: method.logo != null && method.logo!.isNotEmpty
                         ? ClipRRect(
-                            borderRadius: BorderRadius.circular(12.r),
-                            child: Image.network(
-                              method.logo!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, _, __) => Icon(
-                                Icons.payment,
-                                color: AppColors.primary,
-                                size: isTablet ? 32.sp : 28.sp,
-                              ),
-                            ),
-                          )
+                      borderRadius: BorderRadius.circular(12.r),
+                      child: Image.network(
+                        method.logo!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, _, __) => Icon(
+                          isWhatsAppMethod ? FontAwesomeIcons.whatsapp : Icons.payment,
+                          color: AppColors.primary,
+                          size: isTablet ? 32.sp : 28.sp,
+                        ),
+                      ),
+                    )
                         : Icon(
-                            method.paymentType?.toLowerCase() == 'wallet'
-                                ? Icons.account_balance_wallet
-                                : Icons.payment,
-                            color: AppColors.primary,
-                            size: isTablet ? 32.sp : 28.sp,
-                          ),
+                      method.paymentType?.toLowerCase() == 'wallet'
+                          ? Icons.account_balance_wallet
+                          : isWhatsAppMethod
+                          ? FontAwesomeIcons.whatsapp
+                          : Icons.payment,
+                      color: AppColors.primary,
+                      size: isTablet ? 32.sp : 28.sp,
+                    ),
                   ),
                   SizedBox(width: 16.w),
                   Expanded(
@@ -446,9 +539,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                           style: TextStyle(
                             fontSize: isTablet ? 20.sp : 18.sp,
                             fontWeight: FontWeight.bold,
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.darkGray,
+                            color: isSelected ? AppColors.primary : AppColors.darkGray,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -483,9 +574,11 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                     ),
                 ],
               ),
+              // عرض الوصف لـ WhatsApp method
               if (method.description != null &&
                   method.description!.isNotEmpty &&
-                  method.id != '10') ...[
+                  method.id != '10' &&
+                  !isWhatsAppMethod) ...[
                 SizedBox(height: 12.h),
                 InkWell(
                   onTap: () => _handlePaymentDescription(method.description!),
@@ -501,11 +594,9 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                     child: Row(
                       children: [
                         Icon(
-                          _isUrl(method.description!)
-                              ? Icons.link
-                              : Icons.content_copy,
+                          _isUrl(method.description!) ? Icons.open_in_new : Icons.content_copy,
                           color: AppColors.primary,
-                          size: isTablet ? 20.sp : 16.sp,
+                          size: isTablet ? 20.sp : 20.sp,
                         ),
                         SizedBox(width: 8.w),
                         Expanded(
@@ -527,6 +618,43 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                         ),
                       ],
                     ),
+                  ),
+                ),
+              ] else if (isWhatsAppMethod) ...[
+                SizedBox(height: 12.h),
+                Container(
+                  padding: EdgeInsets.all(isTablet ? 16.w : 12.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(
+                      color: AppColors.primaryColor.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        FontAwesomeIcons.whatsapp,
+                        color: AppColors.primaryColor,
+                        size: isTablet ? 20.sp : 20.sp,
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          'Contact us on WhatsApp: ${method.description}',
+                          style: TextStyle(
+                            fontSize: isTablet ? 16.sp : 16.sp,
+                            color: AppColors.primaryColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.open_in_new,
+                        color:AppColors.primaryColor,
+                        size: isTablet ? 16.sp : 20.sp,
+                      ),
+                    ],
                   ),
                 ),
               ] else if (method.id == '10') ...[
@@ -679,8 +807,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   }
 
   bool _isUrl(String text) {
-    return Uri.tryParse(text)?.hasScheme ??
-        false && (text.startsWith('http://') || text.startsWith('https://'));
+    return Uri.tryParse(text)?.hasScheme ?? false && (text.startsWith('http://') || text.startsWith('https://'));
   }
 
   void _handlePaymentDescription(String description) async {
@@ -718,12 +845,12 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
     }
 
     String imageData;
+    // تحديث الشرط ليشمل payment method 42
     if (selectedMethod!.id == 'Wallet' ||
-        selectedMethod!.id.toString() == '10') {
-      // No image required for Wallet or Paymob (ID: 10) payments
+        selectedMethod!.id.toString() == '10' ||
+        selectedMethod!.id.toString() == '42') {
       imageData = 'wallet';
     } else {
-      // Image is required for other payment methods
       if (base64String == null) {
         showTopSnackBar(
           context,
@@ -742,6 +869,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
         userId: SelectedStudent.studentId,
         image: imageData,
       );
+      developer.log("Selected payment method ID: ${selectedMethod!.id!}");
     } catch (e) {
       developer.log('Error in purchase: $e');
       showTopSnackBar(
@@ -773,17 +901,24 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
               ),
             );
           } else if (state is BuyPackageSuccess) {
+            String message;
+            if (selectedMethod?.id == 'Wallet' ||
+                selectedMethod?.id.toString() == '10' ||
+                selectedMethod?.id.toString() == '42') {
+              message = 'Package "$packageName" purchase completed successfully!';
+            } else {
+              message = 'Package "$packageName" purchase is pending!';
+            }
             showTopSnackBar(
               context,
-              'Package "$packageName" purchase is pending!',
+              message,
               AppColors.green,
             );
             Navigator.pop(context);
           } else if (state is BuyPackageError) {
             showTopSnackBar(
               context,
-              state.message ??
-                  'Please select a valid method or check your wallet balance',
+              'Please select a valid method or check your wallet balance',
               AppColors.red,
             );
           }
@@ -797,8 +932,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
               return BlocBuilder<PaymentMethodsCubit, PaymentMethodsStates>(
                 bloc: paymentMethodsCubit,
                 builder: (context, paymentState) {
-                  if (paymentState is PaymentMethodsLoadingState ||
-                      currenciesState is CurrenciesLoading) {
+                  if (paymentState is PaymentMethodsLoadingState || currenciesState is CurrenciesLoading) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -826,24 +960,21 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                         ],
                       ),
                     );
-                  } else if (paymentState is PaymentMethodsSuccessState &&
-                      currenciesState is CurrenciesSuccess) {
+                  } else if (paymentState is PaymentMethodsSuccessState && currenciesState is CurrenciesSuccess) {
                     final methods = [
                       _walletPaymentMethod,
-                      ...paymentState.paymentMethodsResponse.paymentMethods!
-                          .map((method) {
-                            if (method.id.toString() == '10') {
-                              return PaymentMethodEntity(
-                                id: method.id,
-                                payment: 'Visacard/Mastercard',
-                                paymentType: method.paymentType,
-                                description: method.description,
-                                logo: method.logo,
-                              );
-                            }
-                            return method;
-                          })
-                          .toList(),
+                      ...paymentState.paymentMethodsResponse.paymentMethods!.map((method) {
+                        if (method.id.toString() == '10') {
+                          return PaymentMethodEntity(
+                            id: method.id,
+                            payment: 'Visacard/Mastercard',
+                            paymentType: method.paymentType,
+                            description: method.description,
+                            logo: method.logo,
+                          );
+                        }
+                        return method;
+                      }).toList(),
                     ];
 
                     final currencies = currenciesState.currencies;
@@ -866,16 +997,18 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                                 vertical: 8.h,
                               ),
                               itemCount: methods.length,
-                              itemBuilder: (context, index) =>
-                                  _buildPaymentMethodCard(methods[index]),
+                              itemBuilder: (context, index) => _buildPaymentMethodCard(methods[index]),
                             ),
                           ),
                         ),
+                        // إخفاء قسم Payment Proof إذا كان المستخدم اختار Wallet أو ID 10 أو ID 42
                         if (selectedMethod != null &&
                             selectedMethod!.id != 'Wallet' &&
-                            selectedMethod!.id.toString() != '10')
+                            selectedMethod!.id.toString() != '10' &&
+                            selectedMethod!.id.toString() != '42')
                           _buildPaymentProofSection(),
-                        if (selectedMethod != null)
+                        // إخفاء زرار Confirm Purchase لو اختار payment method 42 (WhatsApp)
+                        if (selectedMethod != null && selectedMethod!.id.toString() != '42')
                           Container(
                             padding: EdgeInsets.all(isTablet ? 24.w : 16.w),
                             decoration: BoxDecoration(
@@ -918,9 +1051,9 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                   } else {
                     String errorMessage = 'Failed to load data';
                     if (paymentState is PaymentMethodsErrorState) {
-                      errorMessage = paymentState.error ?? errorMessage;
+                      errorMessage = "Something went wrong. Please try again" ?? errorMessage;
                     } else if (currenciesState is CurrenciesError) {
-                      errorMessage = currenciesState.message ?? errorMessage;
+                      errorMessage = "Something went wrong. Please try again" ?? errorMessage;
                     }
                     return Center(
                       child: Container(
@@ -1023,12 +1156,10 @@ class PackagePaymentWebViewScreen extends StatefulWidget {
   });
 
   @override
-  State<PackagePaymentWebViewScreen> createState() =>
-      _PackagePaymentWebViewScreenState();
+  State<PackagePaymentWebViewScreen> createState() => _PackagePaymentWebViewScreenState();
 }
 
-class _PackagePaymentWebViewScreenState
-    extends State<PackagePaymentWebViewScreen> {
+class _PackagePaymentWebViewScreenState extends State<PackagePaymentWebViewScreen> {
   late WebViewController _controller;
   bool _isLoading = true;
 

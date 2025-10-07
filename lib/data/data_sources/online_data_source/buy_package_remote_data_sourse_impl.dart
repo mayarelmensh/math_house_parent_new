@@ -21,15 +21,12 @@ class BuyPackageRemoteDataSourceImpl implements BuyPackageRemoteDataSource {
   }) async {
     var token = SharedPreferenceUtils.getData(key: 'token');
 
-    int parsedPaymentMethodId = paymentMethodId is String
-        ? (paymentMethodId == 'Wallet' ? 0 : int.parse(paymentMethodId))
-        : paymentMethodId as int;
 
     final response = await apiManager.postData(
       endPoint: EndPoints.buyPackage + "$packageId",
       body: {
         'user_id': userId,
-        'payment_method_id': parsedPaymentMethodId,
+        'payment_method_id': paymentMethodId,
         'image': image,
       },
       options: Options(headers: {'Authorization': 'Bearer $token'}),

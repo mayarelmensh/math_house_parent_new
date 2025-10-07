@@ -172,9 +172,11 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
                   ? _buildNoResultsState()
                   : courses.isEmpty && SelectedStudent.studentId == null
                   ? _buildNoStudentSelectedState()
+                  : courses.isEmpty
+                  ? _buildNoCoursesAvailableState() // New state for no courses
                   : Column(
                 children: [
-                  if (courses.isNotEmpty) _buildCoursesHeader(courses.length),
+                  _buildCoursesHeader(courses.length),
                   Expanded(child: _buildCoursesList(courses)),
                 ],
               ),
@@ -442,7 +444,6 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
                 setState(() {
                   _isInitialLoading = true; // Show loading again on retry
                 });
-
                 if (SelectedStudent.studentId != null) {
                   print("Retrying fetchMyCourses with studentId: ${SelectedStudent.studentId}");
                   context.read<MyCoursesCubit>().fetchMyCourses(SelectedStudent.studentId!);
@@ -587,6 +588,58 @@ class _MyCoursesScreenState extends State<MyCoursesScreen>
             Text(
               'Try adjusting your search or filter',
               style: TextStyle(fontSize: 14.sp, color: AppColors.grey[600]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoCoursesAvailableState() {
+    return Center(
+      child: Container(
+        margin: EdgeInsets.all(32.r),
+        padding: EdgeInsets.all(24.r),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16.r),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black.withOpacity(0.1),
+              blurRadius: 10.r,
+              offset: Offset(0, 4.h),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(16.r),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error,
+                size: 48.sp,
+                color: AppColors.primary,
+              ),
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'No Courses Available',
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.grey[800],
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'There are no courses available for this student.',
+              style: TextStyle(fontSize: 14.sp, color: AppColors.grey[600]),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

@@ -20,13 +20,12 @@ class HomeTab extends StatefulWidget {
 class _HomeTabState extends State<HomeTab> {
   final HomeScreenCubit homeScreenCubit = getIt<HomeScreenCubit>();
 
-  bool get isTablet => MediaQuery.of(context).size.width > 600;
-  bool get isDesktop => MediaQuery.of(context).size.width > 1024;
+  bool get isTablet => ScreenUtil().screenWidth > 600.w; // استخدام ScreenUtil
+  bool get isDesktop => ScreenUtil().screenWidth > 1024.w;
 
   @override
   void initState() {
     super.initState();
-    // Load student data when screen initializes
     if (SelectedStudent.studentId != null && SelectedStudent.studentId != 0) {
       homeScreenCubit.fetchStudentData();
     }
@@ -34,15 +33,17 @@ class _HomeTabState extends State<HomeTab> {
 
   @override
   void dispose() {
-    homeScreenCubit.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final crossAxisCount = (screenWidth / 220.w).floor().clamp(2, 4);
-    final childAspectRatio = screenWidth > 600 ? 1.2 : 1.0;
+    final screenWidth = ScreenUtil().screenWidth; // استخدام ScreenUtil بدل MediaQuery
+    final crossAxisCount = (screenWidth / (isDesktop ? 300.w : isTablet ? 250.w : 220.w)).floor().clamp(2, 4);
+    final childAspectRatio = isDesktop ? 1.3 : isTablet ? 1.2 : 1.0;
+
+    print("Screen width: $screenWidth, crossAxisCount: $crossAxisCount, childAspectRatio: $childAspectRatio");
+    print("MediaQuery width: ${MediaQuery.of(context).size.width}");
 
     return BlocProvider.value(
       value: homeScreenCubit,
@@ -52,7 +53,7 @@ class _HomeTabState extends State<HomeTab> {
           showArrowBack: false,
           actions: [
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+              padding: EdgeInsets.symmetric(horizontal: isTablet ? 16.w : 12.w, vertical: 10.h),
               child: Image.asset("assets/images/logo.png"),
             ),
           ],
@@ -73,15 +74,14 @@ class _HomeTabState extends State<HomeTab> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildStudentInfoSection(),
-                  // SizedBox(height: 0.h),
                   GridView.count(
                     shrinkWrap: true,
                     physics: NeverScrollableScrollPhysics(),
                     crossAxisCount: crossAxisCount,
                     childAspectRatio: childAspectRatio,
-                    crossAxisSpacing: 12.w,
-                    mainAxisSpacing: 12.h,
-                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+                    crossAxisSpacing: isTablet ? 12.w : 5.w, // متسق مع PaymentsScreen
+                    mainAxisSpacing: isTablet ? 12.h : 5.h,
+                    padding: EdgeInsets.all(isTablet ? 20.r : 15.r), // متسق مع PaymentsScreen
                     children: [
                       HomeCard(
                         icon: Icons.person_rounded,
@@ -162,7 +162,7 @@ class _HomeTabState extends State<HomeTab> {
               borderRadius: BorderRadius.circular(16.r),
               border: Border.all(
                 color: AppColors.orange.withOpacity(0.3),
-                width: 1.5,
+                width: 1.5.w, // متسق مع ScreenUtil
               ),
             ),
             child: Row(
@@ -235,7 +235,7 @@ class _HomeTabState extends State<HomeTab> {
                   width: isTablet ? 28.w : 24.w,
                   height: isTablet ? 28.h : 24.h,
                   child: CircularProgressIndicator(
-                    strokeWidth: 3,
+                    strokeWidth: 3.w, // متسق مع ScreenUtil
                     color: AppColors.primary,
                   ),
                 ),
@@ -257,7 +257,7 @@ class _HomeTabState extends State<HomeTab> {
             margin: EdgeInsets.symmetric(horizontal: 8.w, vertical: 0.h),
             padding: EdgeInsets.symmetric(
               horizontal: isTablet ? 24.w : 20.w,
-              vertical: isTablet ? 20.h : 15.h,
+              vertical: isTablet ? 20.h : 10.h,
             ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -271,7 +271,7 @@ class _HomeTabState extends State<HomeTab> {
               borderRadius: BorderRadius.circular(16.r),
               border: Border.all(
                 color: AppColors.primary.withOpacity(0.3),
-                width: 1.5,
+                width: 1.5.w, // متسق مع ScreenUtil
               ),
             ),
             child: Row(
@@ -308,27 +308,25 @@ class _HomeTabState extends State<HomeTab> {
                     children: [
                       Row(
                         children: [
-                        Text(
-                          studentData.nickName,
-                          style: TextStyle(
-                            fontSize: isTablet ? 20.sp : 18.sp,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.grey[900],
-                            letterSpacing: 0.3,
+                          Text(
+                            studentData?.nickName ?? 'Unknown',
+                            style: TextStyle(
+                              fontSize: isTablet ? 20.sp : 18.sp,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.grey[900],
+                              letterSpacing: 0.3,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(width: 15.w,),
-                        _buildInfoDot(studentData.grade, Colors.green,true),
-
-                      ],),
-
+                          SizedBox(width: 15.w),
+                          _buildInfoDot(studentData?.grade ?? '', Colors.green, true),
+                        ],
+                      ),
                       SizedBox(height: 8.h),
                       Row(
                         children: [
-
-                          _buildInfoDot(studentData.category, Colors.purple,false),
+                          _buildInfoDot(studentData?.category ?? '', Colors.purple, false),
                         ],
                       ),
                     ],
@@ -353,7 +351,7 @@ class _HomeTabState extends State<HomeTab> {
               borderRadius: BorderRadius.circular(16.r),
               border: Border.all(
                 color: Colors.red.withOpacity(0.3),
-                width: 1.5,
+                width: 1.5.w, // متسق مع ScreenUtil
               ),
             ),
             child: Row(
@@ -385,7 +383,7 @@ class _HomeTabState extends State<HomeTab> {
                       ),
                       SizedBox(height: 4.h),
                       Text(
-                        state.error ?? 'Failed to load student data',
+                        state.error ?? 'Failed to load student data. Please try again.',
                         style: TextStyle(
                           fontSize: isTablet ? 15.sp : 14.sp,
                           fontWeight: FontWeight.w500,
@@ -407,7 +405,7 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _buildInfoDot(String text, Color color,bool grade) {
+  Widget _buildInfoDot(String text, Color color, bool grade) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -421,9 +419,7 @@ class _HomeTabState extends State<HomeTab> {
         ),
         SizedBox(width: 6.w),
         Text(
-          grade==true?
-         'grade:$text'
-          :text,
+          grade ? 'grade: $text' : text,
           style: TextStyle(
             fontSize: isTablet ? 15.sp : 14.sp,
             fontWeight: FontWeight.w600,
@@ -434,7 +430,6 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 }
-
 class PaymentsScreen extends StatelessWidget {
   const PaymentsScreen({super.key});
 

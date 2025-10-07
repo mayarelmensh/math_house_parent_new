@@ -78,13 +78,9 @@ class MyPackageScreen extends StatelessWidget {
                   color: AppColors.primary.withOpacity(0.1),
                 ),
               ),
-              SizedBox(
-                width: 60.w,
-                height: 60.h,
-                child: CircularProgressIndicator(
-                  color: AppColors.primary,
-                  strokeWidth: 4.w,
-                ),
+              CircularProgressIndicator(
+                color: AppColors.primary,
+                strokeWidth: 4.w,
               ),
             ],
           ),

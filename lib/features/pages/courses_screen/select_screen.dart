@@ -8,8 +8,7 @@ class SelectScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final crossAxisCount = (screenWidth / 180.w).floor();
-    final childAspectRatio = screenWidth > 600 ? 1.2 : 1.0;
+
 
     return Scaffold(
       appBar: CustomAppBar(

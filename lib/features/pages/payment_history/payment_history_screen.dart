@@ -222,9 +222,9 @@ class _PaymentScreenViewState extends State<PaymentScreenView> {
         child: Row(
           children: [
             _buildStatusFilterDropdown(),
-            SizedBox(width: 12.w),
+            SizedBox(width: 5.w),
             _buildPaymentMethodFilterDropdown(),
-            SizedBox(width: 12.w),
+            SizedBox(width: 5.w),
             _buildDateRangeFilterButton(),
           ],
         ),
@@ -237,13 +237,13 @@ class _PaymentScreenViewState extends State<PaymentScreenView> {
       builder: (context, state) {
         return DropdownButton<String>(
           value: selectedFilter,
-          hint: Text('Status', style: TextStyle(fontSize: 16.sp)),
+          hint: Text('Status', style: TextStyle(fontSize: 18.sp)),
           items: [
-            DropdownMenuItem(value: 'all', child: Text('All', style: TextStyle(fontSize: 15.sp))),
-            DropdownMenuItem(value: 'pendding', child: Text('Pending', style: TextStyle(fontSize: 15.sp))),
-            DropdownMenuItem(value: 'approved', child: Text('Approved', style: TextStyle(fontSize: 15.sp))),
-            DropdownMenuItem(value: 'in_progress', child: Text('In Progress', style: TextStyle(fontSize: 15.sp))),
-            DropdownMenuItem(value: 'rejected', child: Text('Rejected', style: TextStyle(fontSize: 15.sp))),
+            DropdownMenuItem(value: 'all', child: Text('All', style: TextStyle(fontSize: 18.sp))),
+            DropdownMenuItem(value: 'pendding', child: Text('Pending', style: TextStyle(fontSize: 18.sp))),
+            DropdownMenuItem(value: 'approved', child: Text('Approved', style: TextStyle(fontSize: 18.sp))),
+            DropdownMenuItem(value: 'in_progress', child: Text('In Progress', style: TextStyle(fontSize: 18.sp))),
+            DropdownMenuItem(value: 'rejected', child: Text('Rejected', style: TextStyle(fontSize: 18.sp))),
           ],
           onChanged: (value) {
             if (value != null) {
@@ -256,11 +256,11 @@ class _PaymentScreenViewState extends State<PaymentScreenView> {
           style: TextStyle(
             color: AppColors.darkGray,
             fontWeight: FontWeight.w600,
-            fontSize: 15.sp,
+            fontSize: 18.sp,
           ),
           dropdownColor: AppColors.white,
           borderRadius: BorderRadius.circular(10.r),
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
           underline: Container(
             height: 1.5.h,
             color: AppColors.primary.withOpacity(0.5),
@@ -279,13 +279,13 @@ class _PaymentScreenViewState extends State<PaymentScreenView> {
         }
         return DropdownButton<String>(
           value: selectedPaymentMethod,
-          hint: Text('Payment Method', style: TextStyle(fontSize: 16.sp)),
+          hint: Text('Payment Method', style: TextStyle(fontSize: 18.sp)),
           items: paymentMethods
               .map((method) => DropdownMenuItem(
             value: method,
             child: Text(
               _formatMethodName(method),
-              style: TextStyle(fontSize: 15.sp),
+              style: TextStyle(fontSize: 18.sp),
             ),
           ))
               .toList(),
@@ -299,7 +299,7 @@ class _PaymentScreenViewState extends State<PaymentScreenView> {
           style: TextStyle(
             color: AppColors.darkGray,
             fontWeight: FontWeight.w600,
-            fontSize: 15.sp,
+            fontSize: 18.sp,
           ),
           dropdownColor: AppColors.white,
           borderRadius: BorderRadius.circular(10.r),
@@ -513,7 +513,7 @@ class _PaymentScreenViewState extends State<PaymentScreenView> {
                   'ID: ${payment.id}',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16.sp,
+                    fontSize: 18.sp,
                     color: AppColors.darkGray,
                   ),
                 ),
@@ -605,7 +605,7 @@ class _PaymentScreenViewState extends State<PaymentScreenView> {
                   label,
                   style: TextStyle(
                     color: AppColors.grey,
-                    fontSize: 12.sp,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -614,7 +614,7 @@ class _PaymentScreenViewState extends State<PaymentScreenView> {
                   value,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 14.sp,
+                    fontSize: 16.sp,
                     color: valueColor ?? AppColors.darkGray,
                   ),
                   overflow: TextOverflow.ellipsis,

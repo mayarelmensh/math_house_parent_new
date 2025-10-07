@@ -64,7 +64,7 @@ class _WalletHistoryScreenState extends State<WalletHistoryScreen> {
                   } else if (state is WalletLoaded) {
                     return _buildWalletContent(context, state.response);
                   } else if (state is WalletError) {
-                    return _buildErrorState(context, state.message);
+                    return _buildErrorState(context,"something went wrong please try again");
                   }
                   return const SizedBox.shrink();
                 },
